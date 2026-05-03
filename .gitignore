@@ -1,0 +1,20 @@
+# 사내 자료, 분류표 v0 등 외부 노출 금지 자료는 별도 디렉토리에서 관리
+private/
+internal/
+.env
+.env.*
+!.env.example
+
+# 개발 도구
+node_modules/
+.DS_Store
+Thumbs.db
+
+# 에디터
+.vscode/
+.idea/
+*.swp
+
+# 임시
+*.log
+*.tmp
