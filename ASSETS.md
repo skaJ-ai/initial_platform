@@ -14,7 +14,7 @@
 
 **v3 활용**:
 - L4/L5/L6 트리 = Agent의 정의 공간
-- 각 L6 노드에서 표준 Skill md 자동 생성 가능
+- 각 L6 노드에서 실행 노하우 Skill 초안 생성 가능
 - Workflow Orchestration의 다단계 흐름 정의 입력
 - 분류표 v0의 도메인 카테고리 입력
 
@@ -27,7 +27,7 @@
 
 **위치**: `C:\dev\AXIOM\Agentwork.md`
 
-**상태**: 설계 완료, 코드 미완 (위키 대비 구현 ~20%)
+**상태**: 설계 완료, 코드 미완
 
 **v3 활용**: Accumulation 메커니즘의 데이터 모델 그대로 차용.
 
@@ -78,7 +78,7 @@ standard_assets
 - same-context policy conflict → 사람 승인
 ```
 
-### 차용할 Trust Tier
+### 차용할 자산 신뢰 단계
 
 ```
 1. raw conversation signal
@@ -99,7 +99,7 @@ Agent는 최소 reviewed 이상만 사용.
 | 2 | tacit candidate 추출 고도화 | P1 |
 | 3 | context tag 모델 | P1 |
 | 4 | review queue, conflict flagging | P1 |
-| 5 | trust tier promotion | P2 |
+| 5 | 자산 신뢰 단계 승급 | P2 |
 | 6 | retrieval 개선 | P2 |
 | 7 | selective agent execution | 출시 후 |
 
@@ -113,7 +113,7 @@ Agent는 최소 reviewed 이상만 사용.
 - 4모드 대화 인프라 → v3의 Copilot 실행 레이어
 - 세션 / 캔버스 → Work Card 위 실행 단위로 재조정
 - Knowledge pipeline → Tacit Capture로 확장
-- memory chunk retrieval → Trust Tier 필터 추가
+- memory chunk retrieval → 자산 신뢰 단계 필터 추가
 
 ## 4. Process 강제 규약 (`process-coaching/CLAUDE.md`)
 
@@ -133,12 +133,21 @@ Agent는 최소 reviewed 이상만 사용.
 
 **v3 활용**: Agent/Skill/Tool 3계층 정의 그대로 사용. 부서원의 모듈화 사고는 v3 실행 레이어의 단단한 기반.
 
+**운영 원칙**:
+- Agent / Skill / Tool은 데이터 종이 아니라 실행 레이어 자료
+- Skill 정의는 플랫폼 코드 리포지토리에서 Lab이 관리
+- Skill 메타·임베딩은 별도 DB에 두어 Workbench 자동 매칭에 사용
+- 자산 데이터에서 반복 노하우가 포착되면 Domain Experts 초안 → Lab 정형화 → Skill 등록 흐름으로 승격
+
 ## 7. 미보유 — 새로 만들어야 할 자산
 
 | 자산 | 필요 시점 | 만들 주체 |
 |---|---|---|
 | 분류표 v0 (HR 도메인 민감도) | 5~6월 | People팀 + 정보보호센터 |
-| 라우팅 정책 (별표 셀 결정 룰) | 6~7월 | People팀 |
+| 데이터 민감도 분류 Agent v0 (GAUSS 기반) | 5~7월 | AX&CI Lab |
+| 라우팅 정책 (별표 영역 결정 룰) | 6~7월 | People팀 |
 | 마스킹/익명화 변환 정책 | 6~7월 | People팀 + 노무 |
 | 강제 정책 문서 v0 | 5~6월 | AXN 랩 + People팀장 |
 | Application audit 스키마 | 7월 | 코드 트랙 |
+| Skill 라이브러리 DB (메타·임베딩) | 9~11월 | AX&CI Lab |
+| Tool 요청 양식 + 카탈로그 | 9~11월 | AX&CI Lab |
