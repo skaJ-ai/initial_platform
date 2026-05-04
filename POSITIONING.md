@@ -1,13 +1,13 @@
 # Positioning v3
 
-> 가설 v1 → v2 → v2.1 → v3 진화 끝의 통합본
-> v3 = Mandate + Routing + Accumulation의 합성
+> v1 (자산 OS) → v2 (운영 레이어) → v2.1 (라우팅) → v3 (Mandate + Routing + Accumulation)
+> 진화 과정은 [DECISIONS.md](./DECISIONS.md) 참조
 
 ---
 
 ## 1. 한 줄
 
-> **HR 플랫폼은 HR 담당자가 HR 데이터를 다룰 때 거쳐야 하는 단일 진입점이다. 안에서 민감도/복잡도에 따라 사내 Gauss 또는 사외 엔터프라이즈 LLM으로 자동 라우팅하고, 사용할수록 회사 맥락이 자산으로 누적되어 다음 사용이 더 좋아진다.**
+**HR 플랫폼은 HR 담당자가 HR 데이터를 다룰 때 거쳐야 하는 단일 진입점이다. 안에서 민감도와 복잡도에 따라 사내 Gauss 또는 사외 엔터프라이즈 LLM으로 자동 라우팅하고, 사용할수록 회사 맥락이 자산으로 누적되어 다음 사용이 더 좋아진다.**
 
 ## 2. 한 장 아키텍처
 
@@ -42,16 +42,16 @@
 ─────────────────────────────────────────────────────────────────
 ```
 
-## 3. 3개 메커니즘 상세
+## 3. 3 메커니즘 상세
 
 ### 3.1 Mandate — 강제 단일 진입점
 
-**원칙.** HR 담당자가 HR 데이터(임직원 정보, 평가, 보상, 인사위 등)를 처리하는 모든 행위는 우리 플랫폼을 통과해야 한다. 단순 일반 질의(번역, 문서 요약, 일반 정보 검색 등)는 제외.
+**원칙.** HR 담당자가 HR 데이터(임직원 정보, 평가, 보상, 인사위 등)를 처리하는 모든 행위는 우리 플랫폼을 통과해야 한다. 단순 일반 질의(번역, 문서 요약, 일반 정보 검색)는 제외.
 
 **왜 강제가 필요한가.**
 
-- 강제 없으면 사용자가 직접 사외 엔터프라이즈 LLM으로 가버린다. 콜드 스타트 문제 영원히 못 푼다.
-- 자유 사용 시 임직원 개인정보가 사외 LLM 컨텍스트에 그대로 올라갈 수 있음 → 보안 사고.
+- 강제 없으면 사용자가 직접 사외 엔터프라이즈로 간다. 콜드 스타트 문제 영원히 못 푼다.
+- 자유 사용 시 임직원 개인정보가 사외 LLM 컨텍스트에 그대로 올라간다. 보안 사고 시간 문제.
 - 강제는 사용자 베이스 확보의 채찍 + 보안/CISO 동맹의 정당성을 동시에 만든다.
 
 **경계 정의.** 강제 범위는 분류표 v0가 정의한다. 강제 정책 발효 전에 분류표가 합의돼야 한다.
@@ -63,28 +63,29 @@
 **1축이 아니라 2축.** Gauss는 데이터 주권 강하지만 성능 약하고, 엔터프라이즈는 성능 강하지만 데이터 위험 있다. 두 축을 같이 봐야 셀별 trade-off 결정 가능.
 
 ```
-                작업 복잡도 →
-                Low          Medium         High
-민감도  Low   [Gauss OK]    [Gauss OK]    [Enterprise]
-   ↓    Med   [Gauss]       [정책]        [정책 ★]
-        High  [Gauss]       [Gauss]       [Gauss + 성능 손해]
+                    작업 복잡도 →
+                    Low          Medium         High
+민감도  Low      [Gauss OK]    [Gauss OK]    [Enterprise]
+   ↓    Med      [Gauss]       [정책 필요]    [정책 필요 ★]
+        High     [Gauss]       [Gauss]        [Gauss + 성능 손해]
 ```
 
 **별표(★) 셀이 People팀 정책의 핵심 자리.** "중간 민감 + 복잡 추론" 셀에서:
+
 - 그대로 엔터프라이즈로? → 보안 위험
 - Gauss로? → 답 품질 손실
 - **마스킹/익명화 후 엔터프라이즈로** → 정책으로 가능
 - **요약/추상화해서 엔터프라이즈로** → 정책으로 가능
-- **분리 호출 (일부만 엔터프라이즈)** → 정책으로 가능
+- **분리 호출 (일부만 엔터프라이즈로)** → 정책으로 가능
 
-이 셀의 결정은 도메인 지식 없으면 못 한다. AX팀, 벤더, 일반 AI Gateway 다 못 한다. **People팀만 가능.**
+이 셀의 결정은 도메인 지식 없으면 못 한다. AX팀도, 벤더도, 일반 AI Gateway도 못 한다. **People팀만 가능.**
 
 ### 3.3 Accumulation — 자산 누적 파이프라인
 
-**핵심 통찰 (`AXIOM/Agentwork.md` 인용).**
+**핵심 통찰** ([AXIOM/Agentwork.md](../AXIOM/Agentwork.md) 인용):
 > "HR AX의 moat는 대화가 많아서가 아니다. 문서가 많아서가 아니다. **업무 카드 위에서 포착된 판단 기준이 검토를 거쳐 재사용 자산으로 승격되는 구조**에서 생긴다."
 
-**파이프라인.**
+**파이프라인:**
 
 ```
 사용자 작업 (Work Card)
@@ -92,16 +93,63 @@
     ↓ Tacit Candidate 추출 (서버 측 intent capture)
     ↓ Context Tag 부착 (audience, sensitivity, exception 등)
     ↓ Review Queue 진입
-    ↓ Reviewer 검수 (fact_rejected / context_split / approved_team / approved_standard / merged)
+    ↓ Reviewer 검수
+    │   └─ fact_rejected / context_split / approved_team
+    │      / approved_standard / merged
     ↓ Trust Tier 승급
     ↓ 다음 Work Card의 검색 대상 / Agent 활용 자산
 ```
 
-**Trust Tier.** raw signal → tacit candidate → reviewed working knowledge → team asset → verified standard asset. Agent는 최소 reviewed 이상만 사용.
+**Trust Tier:** raw signal → tacit candidate → reviewed working knowledge → team asset → verified standard asset.
+Agent는 최소 reviewed 이상만 사용.
 
-**핵심 비목표.** raw chat 전체를 자동 승격하지 않는다. 모든 신호가 자산이 되지 않는다. 사람의 검수가 들어가는 게 핵심.
+**핵심 비목표:** raw chat 전체를 자동 승격하지 않는다. 모든 신호가 자산이 되지 않는다. 사람의 검수가 들어가는 게 핵심.
 
-## 4. 차별 후보 5가지 평가
+## 4. 데모 시나리오 3종 (11월 출시 기준)
+
+데모는 한 화면으로 끝까지 보여준다. 사용자가 입력 → 라우팅 결정 시각화 → 결과 → 자산 누적 한 줄 표시.
+
+### 시나리오 A — 민감 데이터 → Gauss
+
+**사용자 입력**: "다음달 임원 인사위 안건 정리해줘. 작년 임원 A씨 평가 이력 같이 봐줘."
+
+**플랫폼 동작:**
+- 분류기 결과: `sensitivity=High` (임원 식별자 + 평가 이력)
+- 라우팅 결정: **Gauss**
+- 화면 표시: "임원 인사 데이터 감지 → 사내 Gauss로 처리합니다 (외부 LLM 차단)"
+- Gauss 응답
+- Audit log: `model=gauss, sensitivity=high, reason=executive_personnel_data`
+- 자산 후보: "임원 인사위 안건 정리 시 작년 평가 이력 인용 패턴" — Review Queue 진입
+
+### 시나리오 B — 비민감 + 복잡 → 엔터프라이즈
+
+**사용자 입력**: "올해 IT 업계 채용시장 트렌드 정리해줘. 우리 직무군 중심으로."
+
+**플랫폼 동작:**
+- 분류기 결과: `sensitivity=Low, complexity=High`
+- 라우팅 결정: **엔터프라이즈 (Claude)**
+- 화면 표시: "공개 정보 + 복잡 분석 → 엔터프라이즈 LLM으로 처리합니다"
+- Claude 응답
+- Audit log: `model=claude_enterprise, sensitivity=low, reason=public_market_analysis`
+- 자산 후보: 자료 인용 / 직무군 매핑 — Review Queue
+
+### 시나리오 C — 별표 셀 → 마스킹 후 엔터프라이즈
+
+**사용자 입력**: "임원 A씨 평가 코멘트 기반으로 강점·약점 분석해서 1on1 코칭 시나리오 만들어줘."
+
+**플랫폼 동작:**
+- 분류기 결과: `sensitivity=Med (식별 가능), complexity=High (코칭 시나리오 작성)`
+- 라우팅 결정: **마스킹 후 엔터프라이즈**
+- 화면 표시 (좌): 원본 코멘트 ("임원 A씨", "OO부서", "30억 매출")
+- 화면 표시 (우): 마스킹된 입력 ("임원_X", "사업부_A", "[금액 범위 1]")
+- Claude 응답 (마스킹 입력 기반)
+- 후처리: 응답 내 placeholder를 원본으로 역치환
+- Audit log: `model=claude_enterprise, sensitivity=med, masked=true, masking_policy=v0.3`
+- 자산 후보: "임원 코칭 시나리오 작성 패턴", "마스킹 정책 적용 사례" — Review Queue
+
+이 세 시나리오 한 화면에 보여주면 People팀장 설득 가능하다. **"엔터프라이즈는 빈 화면, 우리는 회사 맥락 + 안전 분기 + 시간이 갈수록 좋아짐"**.
+
+## 5. 차별 후보 5가지 평가
 
 | # | 후보 | 강도 | 근거 |
 |---|---|---|---|
@@ -113,39 +161,40 @@
 
 **1, 2가 본체. 3은 보완. 4, 5는 부가.**
 
-## 5. 강조점 — 절대 잊지 말 것
+## 6. 절대 잊지 말 것
 
-### 5.1 7월 엔터프라이즈와 정면 대결을 피해야 한다
+### 6.1 의사결정 필터
 
-빌드 중인 모든 기능에 다음 필터를 적용한다:
+빌드 중인 모든 기능에 다음 질문 적용:
 
 > "이 기능, Claude Enterprise / Gemini Enterprise / Custom GPT로도 동일하게 가능한가?"
 
-Yes면 차별 못 만든다. 그 기능 자체로는 안 되고, 위에 Mandate/Routing/Accumulation 중 하나가 얹혀야 차별이 생긴다.
+Yes면 차별 못 만든다. 위에 Mandate/Routing/Accumulation 중 하나가 얹혀야 차별이 생긴다.
 
-### 5.2 Mandate의 정당성을 끊임없이 강조해야 한다
+### 6.2 Mandate의 정당성 라인을 흔들지 말 것
 
-"Skill이 모여 있어서 편함"은 강제 정당성으로 약하다. 정당성은 다음에서만 나온다:
+"Skill이 모여 있어서 편함"은 강제 정당성으로 약하다. 정당성은 다음 셋에서만 나온다:
+
 - HR 데이터 거버넌스 (외부 누수 위험 차단)
 - 회사 맥락 누적 (회사 자산화)
 - HR 도메인 정책의 단일 책임 부서
 
 이 셋을 People팀장, 정보보호센터, 보안, AX팀에 일관되게 강조해야 정책 합의 가능.
 
-### 5.3 자산 누적이 가장 큰 moat다
+### 6.3 자산 누적이 가장 큰 moat
 
-`AXIOM/Agentwork.md`의 Work Card / Tacit Candidate / Context Tag / Review Queue / Trust Tier 5종 데이터 모델이 v3의 Accumulation 메커니즘과 정확히 일치한다. **이 설계를 차용해서 11월 빌드 P0의 일부로 가져간다.**
+[AXIOM/Agentwork.md](../AXIOM/Agentwork.md)의 Work Card / Tacit Candidate / Context Tag / Review Queue / Trust Tier 5종 데이터 모델이 v3 Accumulation과 정확히 일치한다. **이 설계를 차용해서 11월 빌드 P0의 일부로 가져간다.**
 
 엔터프라이즈가 카피 못 하는 본질이 여기 있다. 시간이 갈수록 강해지는 유일한 메커니즘.
 
-## 6. 비교표 — Before vs After
+## 7. Before vs After
 
 | 항목 | Before (현재 빌드 방향) | After (v3) |
 |---|---|---|
-| 한 줄 정체성 | "스킬+툴콜링+외부 LLM API 챗 플랫폼" | "HR 데이터 거버넌스+자산 누적 운영 레이어" |
+| 한 줄 정체성 | "스킬+툴콜링+외부 LLM API 챗 플랫폼" | "HR 데이터 거버넌스 + 자산 누적 운영 레이어" |
 | 콜드 스타트 | 빈 채팅창 | 내 Work Card + 회사 컨텍스트 |
 | 모델 | 외부 LLM 직결 | BYOM 슬롯 (Gauss/엔터프라이즈 자동 분기) |
 | 강제 정당성 | 없음 | 데이터 거버넌스 |
 | 자산화 | 없음 | Tacit Candidate → Review → Trust Tier |
 | 7월 엔터프라이즈 도래 후 | 정면 충돌 → 깨짐 | 보완 레이어 → 위에 얹힘 |
-| 시간이 흐를수록 | 약화 (엔터프라이즈에 밀림) | 강화 (자산 누적) |
+| 시간이 흐를수록 | 약화 | 강화 (자산 누적) |

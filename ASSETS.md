@@ -1,4 +1,4 @@
-# Assets — 가용 자산 목록
+# Assets — 가용 자산
 
 > v3 빌드 시 활용 가능한 기존 자산. 이미 만들어둔 것을 다시 만들지 않는다.
 
@@ -23,7 +23,7 @@
 - 3단계 폴백 체인 (`chat_orchestrator.py`) — LLM → Rule Coach → Mock
 - L345 참조 데이터 — 6 L3, 40+ L4, 100+ L5
 
-## 2. AXIOM — Agentwork.md 데이터 모델
+## 2. AXIOM Agentwork.md — 데이터 모델 차용
 
 **위치**: `C:\dev\AXIOM\Agentwork.md`
 
@@ -33,7 +33,7 @@
 
 ### 차용할 테이블 5종
 
-```sql
+```
 work_cards
   - id, workspace_id, owner_user_id, process_asset_id
   - title, description, domain_l3, status, priority
@@ -92,7 +92,7 @@ Agent는 최소 reviewed 이상만 사용.
 
 ### 차용할 구현 순서 (Agentwork Phase 0~7)
 
-| Phase | 내용 | v3 P 매핑 |
+| Phase | 내용 | v3 매핑 |
 |---|---|---|
 | 0 | work_cards 최소 스키마, sessions 연결 | P1 |
 | 1 | work card 도입, tacit_candidates 저장 | P1 |
@@ -103,7 +103,7 @@ Agent는 최소 reviewed 이상만 사용.
 | 6 | retrieval 개선 | P2 |
 | 7 | selective agent execution | 출시 후 |
 
-## 3. AXIOM — Copilot UX 자산
+## 3. AXIOM Copilot UX 자산
 
 **위치**: `C:\dev\AXIOM\` 코드 트리
 
@@ -115,21 +115,17 @@ Agent는 최소 reviewed 이상만 사용.
 - Knowledge pipeline → Tacit Capture로 확장
 - memory chunk retrieval → Trust Tier 필터 추가
 
-## 4. process-coaching CLAUDE.md — Process 강제 규약
-
-**위치**: `C:\dev\process-coaching\CLAUDE.md`
+## 4. Process 강제 규약 (`process-coaching/CLAUDE.md`)
 
 **내용**: 4단계 프로세스 (PLAN → CONTEXT → CHECKLIST → 자가점검 → 교차리뷰)
 
-**v3 활용**: 본 initial_platform 빌드에도 동일 규약 적용 권고. PLAN.md, CONTEXT.md, CHECKLIST.md 강제 생성 + 사용자 승인 후 진행.
+**v3 활용**: 본 initial_platform 빌드에도 동일 규약 적용 권고.
 
-## 5. AXIOM/CLAUDE.md — Front Guard 컨벤션
-
-**위치**: `C:\dev\AXIOM\CLAUDE.md`
+## 5. Front Guard 컨벤션 (`AXIOM/CLAUDE.md`)
 
 **내용**: Naming, Import order, Idempotency rules, Component patterns, Back Guard self-evaluation
 
-**v3 활용**: HR 플랫폼 본체 빌드 시 이 컨벤션 적용. 멱등성 규칙은 LLM 출력의 일관성 확보.
+**v3 활용**: HR 플랫폼 본체 빌드 시 이 컨벤션 적용. 멱등성 규칙은 LLM 출력 일관성 확보.
 
 ## 6. 부서원 작업물 — Agent/Skill/Tool 모듈
 
@@ -145,4 +141,4 @@ Agent는 최소 reviewed 이상만 사용.
 | 라우팅 정책 (별표 셀 결정 룰) | 6~7월 | People팀 |
 | 마스킹/익명화 변환 정책 | 6~7월 | People팀 + 노무 |
 | 강제 정책 문서 v0 | 5~6월 | AXN 랩 + People팀장 |
-| 응답 audit 스키마 | 7월 | 코드 트랙 |
+| Application audit 스키마 | 7월 | 코드 트랙 |
