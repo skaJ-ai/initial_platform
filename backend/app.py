@@ -133,31 +133,36 @@ def _wiki_sidebar(active: str = "") -> str:
     return f"""
 <aside class="sidebar">
   <a href="/wiki/index.html" class="logo">HR <span>AX</span> Platform Wiki</a>
-  <div class="category">Final</div>
-  <nav>
-    <a href="/docs/ppt"{active_attr('/docs/ppt')}>PPT</a>
-    <a href="/docs/one-pager"{active_attr('/docs/one-pager')}>One Pager</a>
-    <a href="/mvp/">MVP Demo</a>
-  </nav>
+
   <div class="category">Overview</div>
   <nav>
     <a href="/wiki/index.html"{active_attr('/wiki/index.html')}>홈</a>
-    <a href="/wiki/overview.html"{active_attr('/wiki/overview.html')}>한 장 개요 + Roadmap</a>
+    <a href="/wiki/overview.html"{active_attr('/wiki/overview.html')}>Overview</a>
   </nav>
+
   <div class="category">Platform</div>
   <nav>
     <a href="/wiki/data-governance.html"{active_attr('/wiki/data-governance.html')}>Data Governance</a>
     <a href="/wiki/harness-engineering.html"{active_attr('/wiki/harness-engineering.html')}>Harness Engineering</a>
   </nav>
+
   <div class="category">Concepts</div>
   <nav>
     <a href="/wiki/terminology.html"{active_attr('/wiki/terminology.html')}>용어 사전</a>
     <a href="/wiki/scenarios.html"{active_attr('/wiki/scenarios.html')}>사용 시나리오</a>
+    <a href="/mvp/">MVP Demo</a>
   </nav>
+
   <div class="category">Reference</div>
   <nav>
     <a href="/wiki/faq.html"{active_attr('/wiki/faq.html')}>FAQ</a>
     <a href="/wiki/next-actions.html"{active_attr('/wiki/next-actions.html')}>다음 액션</a>
+  </nav>
+
+  <div class="category">Documents</div>
+  <nav>
+    <a href="/docs/ppt"{active_attr('/docs/ppt')}>PPT</a>
+    <a href="/docs/one-pager"{active_attr('/docs/one-pager')}>One Pager</a>
   </nav>
 </aside>
 """.strip()
