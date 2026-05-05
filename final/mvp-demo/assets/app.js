@@ -14,9 +14,11 @@
 const HRAX_CURRENT_USER = window.HRAX_DATA.CURRENT_USER;
 const HRAX_SCENARIOS = window.HRAX_DATA.SCENARIOS;
 const HRAX_DOMAINS = window.HRAX_DATA.DOMAINS;
+const HRAX_PROCESS_CATALOG = window.HRAX_DATA.PROCESS_CATALOG;
 
 let currentView = 'workspace';
 let currentCardId = null;
+let currentEntryMode = 'guided';
 let conversationHistory = [];
 
 const DOMAIN_CODES = {
@@ -52,8 +54,9 @@ function renderTopbar() {
 // ── SIDEBAR ──
 function renderSidebar() {
   const allCount = HRAX_SCENARIOS.length;
-  const formalCount = HRAX_SCENARIOS.filter(s => s.type === 'formal').length;
-  const informalCount = HRAX_SCENARIOS.filter(s => s.type === 'informal').length;
+  const guidedCount = HRAX_SCENARIOS.filter(s => s.entryMode === 'guided').length;
+  const openCount = HRAX_SCENARIOS.filter(s => s.entryMode === 'open').length;
+  const accessDomains = HRAX_CURRENT_USER.domains || HRAX_DOMAINS.filter(d => d.count > 0).map(d => d.name);
 
   const html = `
     <div class="sidebar-logo">
@@ -71,31 +74,33 @@ function renderSidebar() {
       </div>
     </div>
 
-    <div class="section-title">My Work-space</div>
-    <a class="nav-item active" data-filter="all">
-      <span class="nav-code">ALL</span>
-      <span>모든 카드</span>
-      <span class="count">${allCount}</span>
+    <div class="section-title">Entry Mode</div>
+    <a class="nav-item active" data-mode="guided">
+      <span class="nav-code">GW</span>
+      <span>Guided Work</span>
+      <span class="count">${guidedCount}</span>
     </a>
-    <a class="nav-item" data-filter="formal">
-      <span class="nav-code">FR</span>
-      <span>정형</span>
-      <span class="count">${formalCount}</span>
-    </a>
-    <a class="nav-item" data-filter="informal">
-      <span class="nav-code">IF</span>
-      <span>비정형</span>
-      <span class="count">${informalCount}</span>
+    <a class="nav-item" data-mode="open">
+      <span class="nav-code">OC</span>
+      <span>Open Chat</span>
+      <span class="count">${openCount}</span>
     </a>
 
-    <div class="section-title">도메인</div>
-    ${HRAX_DOMAINS.map(d => `
-      <a class="nav-item" data-domain="${d.name}">
-        <span class="nav-code">${DOMAIN_CODES[d.name] || d.id.slice(0, 2).toUpperCase()}</span>
-        <span>${d.name}</span>
-        ${d.count > 0 ? `<span class="count">${d.count}</span>` : ''}
-      </a>
-    `).join('')}
+    <div class="section-title">My Work-space</div>
+    <a class="nav-item" data-mode="all">
+      <span class="nav-code">ALL</span>
+      <span>전체 추천</span>
+      <span class="count">${allCount}</span>
+    </a>
+
+    <div class="scope-card">
+      <div class="scope-label">로그인 기반 권한</div>
+      <strong>${HRAX_CURRENT_USER.org || HRAX_CURRENT_USER.role}</strong>
+      <div class="scope-tags">
+        ${accessDomains.map(name => `<span>${name}</span>`).join('')}
+      </div>
+      <p>${HRAX_PROCESS_CATALOG.totalL6Label} 중 권한·최근 업무·입력 의도 기반 후보만 노출합니다.</p>
+    </div>
 
     <div class="section-title">관리</div>
     <a class="nav-item" data-view="review-queue">
@@ -110,21 +115,13 @@ function renderSidebar() {
   `;
   document.getElementById('sidebar').innerHTML = html;
 
-  // Bind filter clicks
-  document.querySelectorAll('.sidebar .nav-item[data-filter]').forEach(el => {
+  // Bind mode clicks
+  document.querySelectorAll('.sidebar .nav-item[data-mode]').forEach(el => {
     el.addEventListener('click', e => {
       document.querySelectorAll('.sidebar .nav-item').forEach(n => n.classList.remove('active'));
       el.classList.add('active');
-      const filter = el.dataset.filter;
-      renderWorkspace(filter);
-    });
-  });
-
-  document.querySelectorAll('.sidebar .nav-item[data-domain]').forEach(el => {
-    el.addEventListener('click', () => {
-      document.querySelectorAll('.sidebar .nav-item').forEach(n => n.classList.remove('active'));
-      el.classList.add('active');
-      renderWorkspace('all', el.dataset.domain);
+      currentEntryMode = el.dataset.mode;
+      renderWorkspace(currentEntryMode);
     });
   });
 
@@ -140,28 +137,47 @@ function renderSidebar() {
 }
 
 // ── WORKSPACE (카드 그리드) ──
-function renderWorkspace(filter = 'all', domain = null) {
+function renderWorkspace(mode = currentEntryMode) {
   currentView = 'workspace';
   currentCardId = null;
+  currentEntryMode = mode || 'guided';
 
   const cards = HRAX_SCENARIOS.filter(s => {
-    const typeMatch = filter === 'all' || s.type === filter;
-    const domainMatch = !domain || s.domain === domain;
-    return typeMatch && domainMatch;
+    return currentEntryMode === 'all' || s.entryMode === currentEntryMode;
   });
 
-  const typeLabel = filter === 'all' ? '전체' : filter === 'formal' ? '정형' : '비정형';
-  const scopeLabel = domain ? `${domain} · ${typeLabel}` : typeLabel;
+  const modeTitle = currentEntryMode === 'open'
+    ? 'Open Chat Mode'
+    : currentEntryMode === 'all'
+      ? '전체 추천'
+      : 'Guided Work Mode';
+  const modeDescription = currentEntryMode === 'open'
+    ? '완전 채팅창에서 시작하되, 플랫폼이 뒤에서 업무 의도와 L3-L6 후보를 추정합니다.'
+    : currentEntryMode === 'all'
+      ? '권한 범위 안에서 Guided Work와 Open Chat 예시를 함께 봅니다.'
+      : '로그인 권한과 반복 업무 패턴을 기준으로 플랫폼이 Work Card와 L6 후보를 먼저 제안합니다.';
 
   const main = document.getElementById('main');
   main.innerHTML = `
     <h1>
       ${HRAX_CURRENT_USER.workspace}
-      <span class="lead">권한 단위: ${HRAX_CURRENT_USER.permissionUnit} · ${scopeLabel} 카드 ${cards.length}개</span>
+      <span class="lead">${HRAX_CURRENT_USER.permissionUnit} · ${modeTitle} · 추천 ${cards.length}개</span>
     </h1>
+    <div class="mode-summary">
+      <div>
+        <span class="section-label">Entry Strategy</span>
+        <h2>${modeTitle}</h2>
+        <p>${modeDescription}</p>
+      </div>
+      <div class="mode-kpi">
+        <strong>${HRAX_PROCESS_CATALOG.totalL6Label}</strong>
+        <span>사용자가 직접 고르지 않고, 플랫폼이 후보를 제안</span>
+      </div>
+    </div>
+    ${currentEntryMode === 'open' ? renderOpenChatSurface() : ''}
     <div class="workspace-toolbar">
-      <span class="section-label">Today's Cards</span>
-      <span class="meta">라우팅 · 조립 · 자산화 시연</span>
+      <span class="section-label">${currentEntryMode === 'open' ? 'Suggested Follow-up' : 'Recommended Work Cards'}</span>
+      <span class="meta">L3-L6 후보 · 라우팅 · 조립 · 자산화 시연</span>
     </div>
     ${cards.length > 0 ? `
       <div class="card-grid">
@@ -174,6 +190,8 @@ function renderWorkspace(filter = 'all', domain = null) {
       </div>
     `}
   `;
+
+  bindOpenChatSurface(main);
 
   // Bind card clicks
   main.querySelectorAll('.work-card').forEach(el => {
@@ -191,18 +209,71 @@ function renderCardThumb(card) {
   return `
     <div class="work-card" data-card-id="${card.id}">
       <div class="card-tags">
-        <span class="tag ${card.type}">${card.type === 'formal' ? '정형' : '비정형'}</span>
+        <span class="tag ${card.type}">${card.entryMode === 'open' ? 'Open Chat' : 'Guided'}</span>
         <span class="tag ${card.grade}">${gradeLabel(card.grade)}</span>
         <span class="tag">${card.domain}</span>
       </div>
       <div class="card-title">${card.title}</div>
       <div class="card-desc">${card.description}</div>
+      ${card.processMeta ? `
+        <div class="process-map">
+          <span>${card.processMeta.l4}</span>
+          <span>${card.processMeta.l5}</span>
+          <strong>${card.processMeta.l6}</strong>
+        </div>
+      ` : ''}
       <div class="card-footer">
-        <span>${card.process || '비정형 일감'}</span>
+        <span>${card.process || 'Open Chat 일감'}</span>
         <span class="card-open">OPEN</span>
       </div>
     </div>
   `;
+}
+
+function renderOpenChatSurface() {
+  return `
+    <div class="open-chat-surface">
+      <div>
+        <span class="section-label">Open Chat</span>
+        <h2>채팅으로 먼저 시작</h2>
+        <p>도메인이나 L6를 직접 고르지 않아도 됩니다. 입력 내용을 기준으로 플랫폼이 권한 범위 안의 L3-L6 후보를 제안하고, 필요한 경우 Guided Work로 전환합니다.</p>
+      </div>
+      <div class="open-chat-box">
+        <textarea id="open-chat-intent" rows="3" placeholder="예: 업적평가 결과를 보고서로 정리하고, 조직별 편차 원인과 후속 조치까지 뽑아줘"></textarea>
+        <button class="btn primary" id="open-chat-analyze">업무 의도 분석</button>
+      </div>
+      <div class="candidate-grid" id="open-chat-candidates">
+        ${HRAX_PROCESS_CATALOG.openCandidates.map(renderCandidate).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function renderCandidate(candidate) {
+  return `
+    <div class="candidate-card">
+      <div class="candidate-score">confidence ${candidate.confidence}</div>
+      <strong>${candidate.l6}</strong>
+      <span>${candidate.l3} / ${candidate.l4} / ${candidate.l5}</span>
+    </div>
+  `;
+}
+
+function bindOpenChatSurface(root) {
+  const button = root.querySelector('#open-chat-analyze');
+  const textarea = root.querySelector('#open-chat-intent');
+  const target = root.querySelector('#open-chat-candidates');
+  if (!button || !textarea || !target) return;
+  button.addEventListener('click', () => {
+    const text = textarea.value.trim();
+    const intro = text
+      ? `입력 의도 "${text.slice(0, 48)}${text.length > 48 ? '...' : ''}" 기준 후보`
+      : '기본 예시 후보';
+    target.innerHTML = `
+      <div class="candidate-note">${intro}. 실제 구현에서는 분류 Agent가 권한·민감도·L3-L6 후보를 함께 반환합니다.</div>
+      ${HRAX_PROCESS_CATALOG.openCandidates.map(renderCandidate).join('')}
+    `;
+  });
 }
 
 function gradeLabel(g) {
@@ -225,12 +296,35 @@ function openCard(cardId) {
       <button class="back" onclick="renderWorkspace()"><span class="btn-code">BK</span>Work-space로 돌아가기</button>
       <h1>${card.title}</h1>
       <div class="meta">
-        <span class="tag ${card.type}">${card.type === 'formal' ? '정형' : '비정형'}</span>
+        <span class="tag ${card.type}">${card.entryMode === 'open' ? 'Open Chat' : 'Guided'}</span>
         <span class="tag ${card.grade}">${gradeLabel(card.grade)}</span>
         <span class="tag">${card.domain}</span>
         ${card.process ? `<span class="tag">${card.process}</span>` : ''}
       </div>
     </div>
+
+    ${card.processMeta ? `
+      <div class="assembly">
+        <div class="assembly-header">
+          <h3>L3-L6 자동 후보</h3>
+          <span class="auto-badge">${card.processMeta.owner}</span>
+        </div>
+        <div class="candidate-grid">
+          ${renderCandidate({
+            l3: card.processMeta.l3,
+            l4: card.processMeta.l4,
+            l5: card.processMeta.l5,
+            l6: card.processMeta.l6,
+            confidence: card.entryMode === 'open' ? '0.78' : '0.92'
+          })}
+          <div class="candidate-card">
+            <div class="candidate-score">근거</div>
+            <strong>${card.processMeta.reason}</strong>
+            <span>사용자는 L6를 직접 선택하지 않고, 필요할 때만 후보를 확인합니다.</span>
+          </div>
+        </div>
+      </div>
+    ` : ''}
 
     <div class="assembly">
       <div class="assembly-header">

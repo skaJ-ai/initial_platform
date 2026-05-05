@@ -13,82 +13,153 @@
 // ── 권한 단위 (현재 사용자 기본값) ──
 const CURRENT_USER = {
   name: "김삼성 프로",
-  role: "L1 부문 People팀",
-  permissionUnit: "부문 People팀 × 채용",
-  workspace: "채용 Work-space"
+  role: "MX사업부 People팀",
+  org: "MX사업부",
+  domains: ["채용", "제도", "임원조직"],
+  permissionUnit: "MX사업부 People팀 × 채용/제도/임원조직",
+  workspace: "내 HR AX Work-space"
+};
+
+// ── L3-L6 참고 카탈로그 (HR-Process-Coaching-AI 더미 데이터 기반) ──
+const PROCESS_CATALOG = {
+  totalL6Label: "약 4,600개 L6",
+  source: "HR-Process-Coaching-AI 더미 L3-L6",
+  modeSummary: [
+    {
+      id: "guided",
+      title: "Guided Work Mode",
+      description: "로그인 권한, 최근 업무, 반복 패턴을 기준으로 플랫폼이 L6 후보와 Work Card를 먼저 제안합니다."
+    },
+    {
+      id: "open",
+      title: "Open Chat Mode",
+      description: "완전 채팅창에서 시작하되, 플랫폼이 뒤에서 업무 의도와 L3-L6 후보를 추정합니다."
+    }
+  ],
+  openCandidates: [
+    {
+      l3: "채용",
+      l4: "인재발굴",
+      l5: "인재 소싱 채널 선정 및 액팅",
+      l6: "채널별 후보자 명단 취합",
+      confidence: "0.78"
+    },
+    {
+      l3: "제도",
+      l4: "업적평가",
+      l5: "결과 분석/보고 및 결과 안내",
+      l6: "업적평가 결과 분석 보고서 확정",
+      confidence: "0.71"
+    },
+    {
+      l3: "임원조직",
+      l4: "인력운영",
+      l5: "임원 석세션 플랜",
+      l6: "임원 석세션 후보군 명단 확정",
+      confidence: "0.68"
+    }
+  ]
 };
 
 // ── 시나리오 카드 4종 ──
 const SCENARIOS = [
   {
     id: "card-001",
+    entryMode: "guided",
     type: "formal",                     // formal | informal
     grade: "confidential",              // confidential | sensitive | general
     domain: "채용",
-    process: "L3 채용 / L5 서류평가",
-    title: "신규 지원자 직무적합성평가",
-    description: "정형 카드 + Domain Agent 있음. 기밀 등급 (지원자 개인정보 + 평가).",
+    process: "L3 채용 / L4 선발전형 / L5 서류심사 / L6 서류 합격자 명단 확정",
+    processMeta: {
+      l3: "채용",
+      l4: "선발전형",
+      l5: "서류심사",
+      l6: "서류 합격자 명단 확정",
+      owner: "HR",
+      reason: "HR·현업 종합 판단으로 합격자 확정"
+    },
+    title: "서류 합격자 명단 확정 지원",
+    description: "Guided Work. 지원자 서류와 현업 검토 결과를 바탕으로 합격자 명단 확정안을 정리합니다.",
     assembly: {
       agent: {
         type: "Domain Agent",
-        name: "채용 직무적합성평가 Agent",
-        sub: "지원자 서류 특이사항 하이라이트 + 직무 적합성 점수"
+        name: "채용 서류심사 Agent",
+        sub: "지원자 특이사항 하이라이트 + 합격/보류 근거 정리"
       },
       skill: {
-        name: "지원자 직무적합성 평가 기준",
-        sub: "Lab 정형화 매뉴얼 (md)"
+        name: "서류심사 합격자 확정 기준",
+        sub: "L3-L6 프로세스 기준 매뉴얼"
       },
-      tool: ["임직원 정보 조회기", "학력 검증기"],
-      context: ["채용 도메인 표준 데이터", "유사 지원자 케이스 (지식 데이터)"]
+      tool: ["지원자 명단 추출기", "평가 결과 취합기", "채용Hub 조회기"],
+      context: ["채용 L3-L6 표준 데이터", "서류심사 기준", "유사 합격/보류 케이스"]
     },
     routing: {
       grade: "기밀",
       model: "사내 LLM (GAUSS, 로그 미저장)",
       reason: "지원자 개인정보 + 평가 의도"
     },
-    samplePrompt: "다음 지원자 서류를 검토하고 직무 적합성을 평가해 주세요.\n[지원자 서류 본문 placeholder]",
-    sampleAgentReply: "지원자 서류 검토 결과 (sample):\n\n• 학력: 적합 (관련 전공)\n• 경력: 부분 적합 (직무 관련 3년 / 요구 5년)\n• 특이사항: 자격증 만료 확인 필요\n\n→ 권장: 1차 보류, 자격증 갱신 확인 후 재검토"
+    samplePrompt: "서류심사 결과와 현업 의견을 기준으로 합격자 명단 확정안을 정리해 주세요.\n[지원자별 평가 요약 placeholder]",
+    sampleAgentReply: "서류 합격자 명단 확정안 (sample):\n\n• 합격 권고: 8명\n• 보류 권고: 3명\n• 추가 확인 필요: 2명 (경력 연차·자격 유효기간)\n\n확인사항:\n1. 현업 보류 의견이 있는 후보의 근거 보강\n2. 자격 유효기간 만료 후보 재검증\n\n→ 권장: 보류 3명은 현업 확인 후 확정"
   },
   {
     id: "card-002",
+    entryMode: "guided",
     type: "formal",
     grade: "sensitive",
     domain: "제도",
-    process: "L3 제도 / L5 평가제도",
-    title: "신규 평가 제도 모판 작성",
-    description: "정형 카드 + Domain Agent 미구축. Skill·Tool만으로 처리.",
+    process: "L3 제도 / L4 업적평가 / L5 결과 분석/보고 및 결과 안내 / L6 업적평가 결과 분석 보고서 확정",
+    processMeta: {
+      l3: "제도",
+      l4: "업적평가",
+      l5: "결과 분석/보고 및 결과 안내",
+      l6: "업적평가 결과 분석 보고서 확정",
+      owner: "HR",
+      reason: "평가 결과 분석 보고서 HR 확정"
+    },
+    title: "업적평가 결과 분석 보고서 초안",
+    description: "Guided Work. 평가 결과 분포와 예외 사항을 비식별화해 보고서 구조로 정리합니다.",
     assembly: {
       agent: null,                      // Domain Agent 미구축
       skill: {
-        name: "평가 제도 모판 양식 매뉴얼",
-        sub: "Lab 정형화 매뉴얼 (md)"
+        name: "업적평가 결과 분석 보고서 작성 기준",
+        sub: "L3-L6 프로세스 기준 매뉴얼"
       },
-      tool: ["표준 양식 템플릿 조회기"],
-      context: ["인사 제도 표준 데이터", "과거 모판 사례 (지식 데이터)"]
+      tool: ["평가 분포 집계기", "보고서 템플릿 조회기"],
+      context: ["제도 L3-L6 표준 데이터", "업적평가 운영 기준", "과거 분석 보고서 사례"]
     },
     routing: {
       grade: "민감",
       model: "사외 LLM (Chat GPT / Gemini) — 비식별화 게이트 통과 후",
-      reason: "특정 임원 평가 사례 인용 가능성"
+      reason: "개인 평가 결과와 조직 단위 분포 포함 가능성"
     },
-    samplePrompt: "다음 평가 제도 신규 모판 작성. [예시 임원 케이스 placeholder]",
-    sampleAgentReply: "신규 평가 제도 모판 (sample):\n\n1. 평가 대상\n2. 평가 항목 및 가중치\n3. 평가 절차\n4. 이의 신청\n\n[비식별화된 사례를 참고하여 작성됨. 사내 재매핑 후 표시]"
+    samplePrompt: "업적평가 결과 분포와 주요 예외사항을 기반으로 분석 보고서 초안을 작성해 주세요.\n[평가 분포표 placeholder]",
+    sampleAgentReply: "업적평가 결과 분석 보고서 초안 (sample):\n\n1. 전체 분포 요약\n2. 조직별 편차 및 원인 가설\n3. 예외 케이스 검토 필요 항목\n4. 후속 조치 제안\n\n[개인명·조직 세부 식별자는 비식별화 후 처리되었습니다.]"
   },
   {
     id: "card-003",
+    entryMode: "open",
     type: "informal",
     grade: "general",
     domain: "채용",
-    title: "사외 채용시장 트렌드 정리",
-    description: "비정형 카드. 사용자 자유 입력 + 도메인 일반 매뉴얼.",
+    process: "Open Chat → 후보: L3 채용 / L4 인재발굴 / L5 인재 소싱 채널 선정 및 액팅",
+    processMeta: {
+      l3: "채용",
+      l4: "인재발굴",
+      l5: "인재 소싱 채널 선정 및 액팅",
+      l6: "채널별 후보자 명단 취합",
+      owner: "DW",
+      reason: "채널별 자동 수집·집계"
+    },
+    title: "채용시장 트렌드와 후보 채널 영향 정리",
+    description: "Open Chat. 자유 입력에서 시작하고, 플랫폼이 업무 의도와 L3-L6 후보를 뒤에서 추정합니다.",
     assembly: {
       agent: null,
       skill: {
         name: "채용 도메인 일반 매뉴얼",
-        sub: "도메인 fallback 매뉴얼"
+        sub: "Open Chat fallback 매뉴얼"
       },
       tool: [],
-      context: ["채용 도메인 표준 데이터"]
+      context: ["채용 L3-L6 표준 데이터", "인재발굴 업무 후보", "공개 시장자료"]
     },
     routing: {
       grade: "일반",
@@ -100,32 +171,41 @@ const SCENARIOS = [
   },
   {
     id: "card-004",
+    entryMode: "guided",
     type: "formal",
     grade: "confidential",
     domain: "임원조직",
-    process: "L3 임원조직 / L5 인사위",
-    title: "다음달 임원 인사위 안건 정리",
-    description: "정형 카드 + Domain Agent 있음. 기밀 등급 (임원 식별자 + 평가 이력).",
+    process: "L3 임원조직 / L4 인력운영 / L5 임원 석세션 플랜 / L6 임원 석세션 후보군 명단 확정",
+    processMeta: {
+      l3: "임원조직",
+      l4: "인력운영",
+      l5: "임원 석세션 플랜",
+      l6: "임원 석세션 후보군 명단 확정",
+      owner: "HR",
+      reason: "석세션 후보 평가 기준 HR 확정"
+    },
+    title: "임원 석세션 후보군 명단 확정",
+    description: "Guided Work. 임원 후보군, 포지션 매핑, 평가 근거를 사내 LLM에서만 처리합니다.",
     assembly: {
       agent: {
         type: "Domain Agent",
-        name: "인사위 안건 정리 Agent",
-        sub: "안건 자동 정리 + 우선순위 제안"
+        name: "임원 석세션 플랜 Agent",
+        sub: "후보군 요약 + 포지션 매핑 + 확인 필요 리스크 정리"
       },
       skill: {
-        name: "인사위 안건 양식·기준",
-        sub: "Lab 정형화 매뉴얼 (md)"
+        name: "임원 석세션 후보군 확정 기준",
+        sub: "L3-L6 프로세스 기준 매뉴얼"
       },
-      tool: ["임원 인사 이력 조회기"],
-      context: ["임원조직 표준", "지난 안건 사례 (권한 단위 한정)"]
+      tool: ["임원 인사 원천 데이터 조회기", "후보군-포지션 매핑 조회기"],
+      context: ["임원조직 L3-L6 표준 데이터", "석세션 후보 평가 기준", "보안문서 열람 이력"]
     },
     routing: {
       grade: "기밀",
       model: "사내 LLM (GAUSS, 로그 미저장)",
-      reason: "임원 식별자 + 평가 이력"
+      reason: "임원 식별자 + 평가·후보군·포지션 정보"
     },
-    samplePrompt: "다음달 임원 인사위 안건을 작년 평가 이력 기반으로 정리해 주세요.",
-    sampleAgentReply: "인사위 안건 정리 (sample):\n\n[안건 1] 임원 A 진급 검토\n• 작년 평가: A+\n• 주요 성과: ...\n\n[안건 2] 임원 B 보직 변경\n• 사유: ...\n\n→ 외부 송출 차단 · 사내 LLM 처리됨"
+    samplePrompt: "임원 석세션 후보군 명단과 후보별 근거를 정리하고, 확정 전 확인해야 할 리스크를 뽑아 주세요.",
+    sampleAgentReply: "임원 석세션 후보군 검토 요약 (sample):\n\n[포지션 1] 후보군 3명\n• 후보 A: 직무 경험 충족, 최근 평가 우수\n• 후보 B: 글로벌 경험 강점, 보직 이동 가능성 확인 필요\n• 후보 C: 성과 안정적이나 후임 후보군 중복\n\n확인 필요:\n1. 후보 B의 이동 가능 시점\n2. 후보 C의 현 조직 리스크\n\n→ 임원 식별 정보 감지. 외부 송출 차단, 사내 LLM 처리됨."
   }
 ];
 
@@ -149,5 +229,6 @@ const DOMAINS = [
 window.HRAX_DATA = {
   CURRENT_USER,
   SCENARIOS,
-  DOMAINS
+  DOMAINS,
+  PROCESS_CATALOG
 };

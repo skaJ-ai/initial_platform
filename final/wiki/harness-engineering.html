@@ -40,7 +40,7 @@
 </aside>
 
 <main class="content">
-  <h1>Harness Engineering <span class="badge">Page 5</span></h1>
+  <h1>Harness Engineering</h1>
   <p class="lead">
     LLM이 HR 맥락 위에서 정확히 일하도록 — Context · 실행 · 외부 연계를 고려한 인프라 설계.
     HR 담당자는 업무 단위로 진입만, 인프라 자동 조립과 외부 시스템·AI 연계는 플랫폼이 처리.
@@ -157,27 +157,27 @@
     </tbody>
   </table>
 
-  <h2>카드 진입 시 자동 조립 흐름</h2>
+  <h2>두 진입 모드와 자동 조립 흐름</h2>
   <div class="diagram">
-사용자가 카드 진입
-       |
-       v
-[Process 트리에 정형 매핑된 카드?]
+사용자 진입
    |
-   +-- Yes (정형) → Domain Agent 부착 (있을 때)
-   |                + 그 노드의 Skill 자동 부착
-   |                + 도메인 Context (규정·기준·노하우) 부착
-   |                + Tool 권한 부여
+   +-- Open Chat Mode
+   |     사용자가 자유 입력
+   |       → 업무 의도 분석
+   |       → 권한 범위 안에서 L3-L6 후보 1~3개 추정
+   |       → 민감도 분류
+   |       → 필요 시 Guided Work로 전환
    |
-   |              → Domain Agent 없을 때:
-   |                + Skill + Tool + Context만 부착하고
-   |                + LLM 기본 호출로 처리
-   |
-   +-- No (비정형) → 사용자가 도메인 지정 (또는 자동 추정)
-                     + 도메인 일반 Skill·Context 부착
-                     + 사용자 자유 입력
-                     + 결정·판단 누적 → 신규 L6/Skill/Agent 후보
+   +-- Guided Work Mode
+         로그인 권한·최근 업무·반복 패턴 기반 Work Card 제안
+           → L3-L6 후보 자동 부착
+           → Domain Agent 부착 (있을 때)
+           → Skill + Tool + Context 자동 조립
+           → 민감도별 모델 라우팅
+           → 결정·판단 누적 → Skill/Agent/L6 후보
   </div>
+
+  <p class="dim">L6가 수천 개 수준이면 사용자가 L4/L5/L6를 직접 탐색하는 UX는 피로도가 높다. L6는 선택 UI가 아니라 플랫폼이 추정·확인·기록하는 메타데이터로 다루는 편이 맞다.</p>
 
   <h2>플랫폼 5 Layer 구조</h2>
   <table>

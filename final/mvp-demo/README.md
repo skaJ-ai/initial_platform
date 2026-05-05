@@ -11,6 +11,8 @@
 - UI 레이아웃 (Top bar / 사이드바 / Main / 우측 채팅 패널)
 - 디자인 시스템 (`../../Design System`의 HR AX Design System 기반)
 - 카드 그리드 + 카드 상세 뷰
+- Open Chat / Guided Work 진입 모드
+- L3-L6 후보 자동 제안 시각화
 - 자동 조립 시각화 (Agent / Skill / Tool / Context)
 - 라우팅 배너 (등급별 색상)
 - 채팅 UI + Sample 응답 (시나리오 데이터 기반)
@@ -72,7 +74,7 @@ final/mvp-demo/
 ├─ BUILD_SPEC.md           # 다음 LLM 빌드 스펙 (gitignore 권장)
 └─ assets/
     ├─ style.css           # HR AX Design System 기반 light theme
-    ├─ scenarios.js        # 시나리오 데이터 4종 + 도메인 카탈로그
+    ├─ scenarios.js        # 시나리오 데이터 4종 + L3-L6 후보 카탈로그
     ├─ llm-client.js       # LLM 클라이언트 STUB (TODO 표기)
     └─ app.js              # UI 로직 (라우팅, 카드 선택, 채팅)
 ```
@@ -82,20 +84,21 @@ final/mvp-demo/
 ## 시연 흐름
 
 1. 브라우저에서 `index.html` 오픈
-2. Work-space 진입 → 카드 4개 표시 (시나리오 데이터)
-3. 카드 클릭 → 자동 조립 시각화 (Agent / Skill / Tool / Context 배치)
-4. 우측 채팅 패널 → 라우팅 배너(기밀/민감/일반)에 따라 처리 모델 표시
-5. 메시지 입력 → Sample 응답 표시 (실제 LLM 미연결)
-6. 결정 한 줄 입력 → 카드 종료 → 검수 후보 큐잉 (stub)
+2. Work-space 진입 → Open Chat / Guided Work 모드 선택
+3. Guided Work 카드 클릭 → L3-L6 후보와 Agent / Skill / Tool / Context 자동 조립 시각화
+4. Open Chat 입력 → 업무 의도 분석과 L3-L6 후보 제안 시연
+5. 우측 채팅 패널 → 라우팅 배너(기밀/민감/일반)에 따라 처리 모델 표시
+6. 메시지 입력 → Sample 응답 표시 (실제 LLM 미연결)
+7. 결정 한 줄 입력 → 카드 종료 → 검수 후보 큐잉 (stub)
 
 ### 시나리오 4종
 
 | ID | 카드 | 등급 | Domain Agent | 비고 |
 |---|---|---|---|---|
-| card-001 | 신규 지원자 직무적합성평가 | 기밀 | ⭕ 있음 | 정형 + Agent 풀 조립 |
-| card-002 | 신규 평가 제도 모판 작성 | 민감 | ❌ 미구축 | Skill·Tool만 조립 (Agent 없음 시연) |
-| card-003 | 사외 채용시장 트렌드 정리 | 일반 | ❌ 미구축 | 비정형 카드 시연 |
-| card-004 | 다음달 임원 인사위 안건 정리 | 기밀 | ⭕ 있음 | 임원조직 도메인 |
+| card-001 | 서류 합격자 명단 확정 지원 | 기밀 | ⭕ 있음 | 채용 / 선발전형 / 서류심사 |
+| card-002 | 업적평가 결과 분석 보고서 초안 | 민감 | ❌ 미구축 | 제도 / 업적평가 / 결과 분석 |
+| card-003 | 채용시장 트렌드와 후보 채널 영향 정리 | 일반 | ❌ 미구축 | Open Chat → L3-L6 후보 추정 |
+| card-004 | 임원 석세션 후보군 명단 확정 | 기밀 | ⭕ 있음 | 임원조직 / 인력운영 / 임원 석세션 플랜 |
 
 ---
 

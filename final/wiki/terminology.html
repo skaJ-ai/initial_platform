@@ -57,7 +57,7 @@
       <tr>
         <td><strong>Domain Agent</strong></td>
         <td>HR 도메인 업무 직접 처리</td>
-        <td>예: 채용 직무적합성평가, 서류평가, 인사위 안건 정리, 입과 안내</td>
+        <td>예: 채용 서류심사, 업적평가 결과 분석, 임원 석세션 후보군 확정, 입과 안내</td>
       </tr>
       <tr>
         <td><strong>System Agent</strong></td>
@@ -114,7 +114,7 @@
       </tr>
       <tr>
         <td><strong>권한 단위 룩업 (Permission Lookup)</strong></td>
-        <td>분류표 v0 검색</td>
+        <td>권한 분류표 검색</td>
         <td>사용자가 속한 조직×도메인 권한 단위(예: MX사업부 × 채용)에 대해 사전 라벨된 정책(기본 등급, 차폐 항목, Domain Experts)을 빠르게 끌어옴.</td>
       </tr>
       <tr>
@@ -133,7 +133,7 @@
         <td>사외 LLM에게 Tool/Skill/Agent 직접 접근 불허. "Tool X를 인자 Y로 호출" 의도만 받고 실행은 플랫폼 내부.</td>
       </tr>
       <tr>
-        <td><strong>분류표 v0</strong></td>
+        <td><strong>권한 분류표</strong></td>
         <td>권한 단위별 정책 매트릭스</td>
         <td>각 (조직 × 도메인) 셀에 데이터 접근 권한 / 기본 등급 / 차폐 정책 / Domain Experts 라벨링.</td>
       </tr>
@@ -178,12 +178,22 @@
       <tr>
         <td><strong>Work Card</strong></td>
         <td>사용자 일감 단위</td>
-        <td>채팅 세션 아님. 정형/비정형 모두 1급 시민. 한 카드에 여러 세션 가능.</td>
+        <td>Guided Work Mode의 사용자 일감 단위. 클릭 시 L3-L6 후보와 Agent/Skill/Tool/Context 자동 조립.</td>
       </tr>
       <tr>
         <td><strong>Work-space</strong></td>
         <td>사용자가 보는 작업 환경</td>
-        <td>조직×도메인 권한 단위로 분리. Work Card 진입의 통합 진입점.</td>
+        <td>로그인 권한 기반 작업 환경. Open Chat과 Guided Work 진입을 함께 제공.</td>
+      </tr>
+      <tr>
+        <td><strong>Open Chat Mode</strong></td>
+        <td>채팅형 진입</td>
+        <td>완전 채팅창에서 시작. 플랫폼이 뒤에서 권한, 민감도, L3-L6 후보를 추정.</td>
+      </tr>
+      <tr>
+        <td><strong>Guided Work Mode</strong></td>
+        <td>추천 업무형 진입</td>
+        <td>반복·표준 업무를 Work Card로 제안. 사용자가 L6를 직접 찾지 않도록 설계.</td>
       </tr>
       <tr>
         <td><strong>검수 후보 (Tacit Candidate)</strong></td>

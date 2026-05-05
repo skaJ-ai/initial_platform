@@ -142,7 +142,7 @@ class LLMClient {
    */
   async classify(text, permissionUnit) {
     // TODO:
-    // 1. 권한 단위 룩업 (분류표 v0)
+    // 1. 권한 단위 룩업 (권한 분류표)
     // 2. 개인식별정보 패턴 대조 (정규식)
     // 3. 사내 LLM 호출 (한국어 맥락 보강)
     // 4. 출력: { grade, redactedItems, confidence }
