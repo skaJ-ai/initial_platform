@@ -57,14 +57,24 @@
   </details>
 
   <details class="faq-item">
-    <summary>A2. 사외 LLM과 Tool/Skill/Agent의 관계?</summary>
+    <summary>A2. 엔터프라이즈 LLM이면 안전한 것 아닌가? 계약된 모델인데 HR 데이터도 그냥 넣어도 되는가?</summary>
+    <div class="faq-body">
+      <p>엔터프라이즈 계약은 중요한 출발점이지만, HR 민감데이터 사용을 자동으로 승인해 주는 장치는 아니다.</p>
+      <p>벤더가 입력 데이터를 모델 학습에 사용하지 않거나 보관 기간을 제한하더라도, 실제 위험은 입력 전후의 업무 흐름에서 발생한다. 예를 들어 프롬프트 원문이 애플리케이션·프록시·모니터링 로그에 남을 수 있고, 권한 범위를 넘는 데이터가 한 번에 입력될 수 있으며, 응답 결과에서 개인·평가·보상·조직 정보가 재식별될 수 있다.</p>
+      <p>따라서 People팀 관점에서는 "계약된 LLM을 쓴다"보다 "어떤 HR 데이터가, 어떤 권한으로, 어떤 맥락에서, 어떤 통제를 거쳐 LLM에 전달되는가"가 더 중요하다.</p>
+      <p>HR AX Platform은 상용 또는 사내 LLM을 단순 호출하는 화면이 아니라, HR 데이터의 민감도 분류, 권한 확인, 비식별화, 감사 로그, 검수 흐름을 LLM 앞뒤에 배치하는 통제 계층이다. 즉, LLM을 쓰기 위한 전제 조건을 플랫폼화하는 것이 목적이다.</p>
+    </div>
+  </details>
+
+  <details class="faq-item">
+    <summary>A3. 사외 LLM과 Tool/Skill/Agent의 관계?</summary>
     <div class="faq-body">
       <p>Function Calling 패턴. 사외 LLM은 Tool/Skill/Agent에 직접 접근 X. "Tool X를 인자 Y로 호출" 의도만 표현하고 실행은 플랫폼 내부에서.</p>
     </div>
   </details>
 
   <details class="faq-item">
-    <summary>A3. Skill md는 누가 작성하고 어디에 저장되는가?</summary>
+    <summary>A4. Skill md는 누가 작성하고 어디에 저장되는가?</summary>
     <div class="faq-body">
       <p>초안: Domain Experts가 자동 추출 후보를 검토해 작성. 공식 등록: AX&CI Lab. 저장: 플랫폼 코드 리포지토리(정의) + 별도 DB(메타·임베딩).</p>
     </div>

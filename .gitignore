@@ -1,4 +1,4 @@
-# 사내 자료, 분류표 v0 등 외부 노출 금지 자료는 별도 디렉토리에서 관리
+# 사내 자료, 권한 분류표 등 외부 노출 금지 자료는 별도 디렉토리에서 관리
 private/
 internal/
 .env
@@ -23,3 +23,6 @@ Thumbs.db
 
 # 다음 LLM 위임용 작업지시서 (외부 공유 금지)
 final/mvp-demo/BUILD_SPEC.md
+
+# Local handoff notes
+handoff_codex.md
