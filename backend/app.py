@@ -130,15 +130,17 @@ def _wiki_sidebar(active: str = "") -> str:
     def active_attr(path: str) -> str:
         return ' class="active"' if path == active else ""
 
+    def overview_attr() -> str:
+        classes = "category category-link"
+        if active in {"/wiki/", "/wiki/overview.html"}:
+            classes += " active"
+        return f' class="{classes}"'
+
     return f"""
 <aside class="sidebar">
-  <a href="/wiki/index.html" class="logo">HR <span>AX</span> Platform Wiki</a>
+  <a href="/wiki/overview.html" class="logo">HR AX Platform</a>
 
-  <div class="category">Overview</div>
-  <nav>
-    <a href="/wiki/index.html"{active_attr('/wiki/index.html')}>홈</a>
-    <a href="/wiki/overview.html"{active_attr('/wiki/overview.html')}>Overview</a>
-  </nav>
+  <a href="/wiki/overview.html"{overview_attr()}>Overview</a>
 
   <div class="category">Platform</div>
   <nav>
@@ -447,16 +449,18 @@ async def create_wiki_page(page: WikiCreate) -> dict[str, Any]:
 
 @app.get("/")
 async def root() -> RedirectResponse:
-    return RedirectResponse("/wiki/")
+    return RedirectResponse("/wiki/overview.html")
 
 
 @app.get("/wiki")
 async def wiki_redirect() -> RedirectResponse:
-    return RedirectResponse("/wiki/")
+    return RedirectResponse("/wiki/overview.html")
 
 
 @app.get("/wiki/{file_path:path}")
-async def serve_wiki(file_path: str = "") -> FileResponse:
+async def serve_wiki(file_path: str = ""):
+    if file_path.strip("/") in {"", "index.html"}:
+        return RedirectResponse("/wiki/overview.html")
     return FileResponse(_safe_file(WIKI_ROOT, file_path))
 
 

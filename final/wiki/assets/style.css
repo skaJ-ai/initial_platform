@@ -179,7 +179,7 @@ aside.sidebar .logo::after {
   left: 46px;
   bottom: 2px;
   color: var(--color-text-secondary);
-  content: 'SHARED WIKI';
+  content: 'IDEATION WIKI';
   font-family: var(--font-sans);
   font-size: 9px;
   font-weight: 800;
@@ -200,6 +200,21 @@ aside.sidebar .category {
   letter-spacing: 0.14em;
   line-height: 1;
   text-transform: uppercase;
+}
+
+aside.sidebar a.category {
+  display: block;
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+}
+
+aside.sidebar a.category:hover,
+aside.sidebar a.category.active {
+  background: var(--color-accent-light);
+  color: var(--color-accent);
 }
 
 aside.sidebar nav {

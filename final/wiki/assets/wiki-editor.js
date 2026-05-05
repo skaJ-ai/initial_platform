@@ -5,7 +5,7 @@
 
   function currentWikiPath() {
     let path = location.pathname.replace(/^\/wiki\/?/, '');
-    return path || 'index.html';
+    return path || 'overview.html';
   }
 
   function addCustomPagesToSidebar() {
