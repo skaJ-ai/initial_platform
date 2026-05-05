@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>용어 사전 — HR AX Platform Wiki</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<aside class="sidebar">
+  <a href="index.html" class="logo">HR <span>AX</span> Platform Wiki</a>
+  <div class="category">Overview</div>
+  <nav>
+    <a href="index.html">홈</a>
+    <a href="overview.html">한 장 개요 + Roadmap</a>
+  </nav>
+  <div class="category">Platform</div>
+  <nav>
+    <a href="data-governance.html">Data Governance</a>
+    <a href="harness-engineering.html">Harness Engineering</a>
+  </nav>
+  <div class="category">Concepts</div>
+  <nav>
+    <a href="terminology.html" class="active">용어 사전</a>
+    <a href="scenarios.html">사용 시나리오</a>
+  </nav>
+  <div class="category">Reference</div>
+  <nav>
+    <a href="faq.html">FAQ</a>
+    <a href="next-actions.html">다음 액션</a>
+  </nav>
+</aside>
+
+<main class="content">
+  <h1>용어 사전</h1>
+  <p class="lead">PM 친화 한국어 + 영문 원어 병기. 부문장·임원·다부서 청중 모두에게 통하는 표현으로 정리.</p>
+
+  <h2>실행 레이어</h2>
+  <table>
+    <thead>
+      <tr><th>용어</th><th>본질</th><th>설명</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Agent</strong></td>
+        <td>LLM 처리 단위 (판단·결정 주체)</td>
+        <td>Domain Agent (HR 도메인 업무 처리) + System Agent (플랫폼 운영). Domain Agent는 검증된 업무부터 점진 구축.</td>
+      </tr>
+      <tr>
+        <td><strong>Domain Agent</strong></td>
+        <td>HR 도메인 업무 직접 처리</td>
+        <td>예: 채용 직무적합성평가, 서류평가, 인사위 안건 정리, 입과 안내</td>
+      </tr>
+      <tr>
+        <td><strong>System Agent</strong></td>
+        <td>플랫폼 백엔드 운영 (사용자 비노출)</td>
+        <td>예: 데이터 민감도 분류 Agent, 차폐 검사 Agent, 자산 추출 Agent</td>
+      </tr>
+      <tr>
+        <td><strong>Skill</strong></td>
+        <td>절차·기준 매뉴얼 (md)</td>
+        <td>Lab이 정형화·등록한 작업 가이드. LLM에 컨텍스트로 주입. 사례가 쌓이면 신규 Skill로 승격.</td>
+      </tr>
+      <tr>
+        <td><strong>Tool</strong></td>
+        <td>결정적 코드 동작</td>
+        <td>임직원 정보 조회, 잔여휴가 계산, 출장비 계산 등. AX&CI Lab이 구현·유지보수, HR 담당자 누구나 추가 요청 가능.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>데이터 종</h2>
+  <table>
+    <thead>
+      <tr><th>용어</th><th>본질</th><th>설명</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>① 운영 데이터 (Master)</strong></td>
+        <td>플랫폼 자체 운영용 마스터</td>
+        <td>로그인·권한 관리용 사용자 식별 정보, 조직·개인·발령 등.</td>
+      </tr>
+      <tr>
+        <td><strong>② 표준 데이터 (Standards)</strong></td>
+        <td>공식 정형 자료</td>
+        <td>인사 제도, 규정, 업무 프로세스(L4/L5/L6), 표준 양식. AX&CI Lab 운영.</td>
+      </tr>
+      <tr>
+        <td><strong>③ 지식 데이터 (Knowledge)</strong></td>
+        <td>검수 통과한 노하우 사례집</td>
+        <td>HR 담당자 사용 흔적이 누적·검수되어 형성. 조직×도메인 권한 단위 + 5단계 공개 범위 부착.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>보안·권한</h2>
+  <table>
+    <thead>
+      <tr><th>용어</th><th>본질</th><th>설명</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>개인식별정보 패턴 대조 (PII Pattern)</strong></td>
+        <td>식별자 모양 자동 검사</td>
+        <td>사번 / 주민등록번호 / 이메일 / 전화번호 / 임직원 평가 코드 등을 정규식·키워드로 자동 검사. 발견 시 민감/기밀 등급 자동 후보.</td>
+      </tr>
+      <tr>
+        <td><strong>권한 단위 룩업 (Permission Lookup)</strong></td>
+        <td>분류표 v0 검색</td>
+        <td>사용자가 속한 조직×도메인 권한 단위(예: MX사업부 × 채용)에 대해 사전 라벨된 정책(기본 등급, 차폐 항목, Domain Experts)을 빠르게 끌어옴.</td>
+      </tr>
+      <tr>
+        <td><strong>비식별화 게이트 (Anonymization Gate)</strong></td>
+        <td>차폐 + 사내 재매핑 단일 통제점</td>
+        <td>민감 등급 사외 송출 시 임직원 식별자·부서명·금액 등을 마스킹/익명화. 매핑 테이블은 사내 보관. 응답 수신 시 사내 재매핑.</td>
+      </tr>
+      <tr>
+        <td><strong>플랫폼 자체 감사 로그 (Application-side Audit)</strong></td>
+        <td>모든 호출의 application 레이어 로그</td>
+        <td>모델 vendor 로그와 별개로 플랫폼이 직접 기록. 사내 LLM(로그 미저장)도 사외 LLM도 동일 포맷으로 추적.</td>
+      </tr>
+      <tr>
+        <td><strong>Function Calling 패턴</strong></td>
+        <td>사외 LLM은 도구 호출 의도만 표현</td>
+        <td>사외 LLM에게 Tool/Skill/Agent 직접 접근 불허. "Tool X를 인자 Y로 호출" 의도만 받고 실행은 플랫폼 내부.</td>
+      </tr>
+      <tr>
+        <td><strong>분류표 v0</strong></td>
+        <td>권한 단위별 정책 매트릭스</td>
+        <td>각 (조직 × 도메인) 셀에 데이터 접근 권한 / 기본 등급 / 차폐 정책 / Domain Experts 라벨링.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>모델·인프라</h2>
+  <table>
+    <thead>
+      <tr><th>용어</th><th>본질</th><th>설명</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>모델 슬롯 (BYOM 어댑터)</strong></td>
+        <td>모델 인터페이스 추상화</td>
+        <td>사내 LLM(GAUSS), 사외 LLM(Chat GPT, Gemini), 신규 모델을 같은 인터페이스로 호출하게 만드는 변환층. 모델 교체 비용 ~0.</td>
+      </tr>
+      <tr>
+        <td><strong>의미 검색 저장소 (임베딩 저장소)</strong></td>
+        <td>RAG용 벡터 DB</td>
+        <td>텍스트(Skill md, 지식 데이터, 표준 데이터)를 의미 벡터로 저장. 사용자 입력과 의미 유사한 자료를 검색해 LLM 컨텍스트로 첨부. 사내 임베딩 모델 사용 (한국어 + 보안).</td>
+      </tr>
+      <tr>
+        <td><strong>의미 기반 검색 (RAG, Retrieval-Augmented Generation)</strong></td>
+        <td>관련 자료 검색 후 답변</td>
+        <td>사용자 질의 → 의미 검색 저장소에서 관련 자료 검색 → LLM에 컨텍스트로 첨부 → 답변. 회사 맥락 반영 핵심.</td>
+      </tr>
+      <tr>
+        <td><strong>GAUSS</strong></td>
+        <td>사내 LLM</td>
+        <td>오픈소스 모델 파인튜닝 기반. 모델 가중치·추론·로그까지 사내 통제. vendor 로그 미저장 운영 가능.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>자산화·검수</h2>
+  <table>
+    <thead>
+      <tr><th>용어</th><th>본질</th><th>설명</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Work Card</strong></td>
+        <td>사용자 일감 단위</td>
+        <td>채팅 세션 아님. 정형/비정형 모두 1급 시민. 한 카드에 여러 세션 가능.</td>
+      </tr>
+      <tr>
+        <td><strong>Work-space</strong></td>
+        <td>사용자가 보는 작업 환경</td>
+        <td>조직×도메인 권한 단위로 분리. Work Card 진입의 통합 진입점.</td>
+      </tr>
+      <tr>
+        <td><strong>검수 후보 (Tacit Candidate)</strong></td>
+        <td>검수 전 자산 후보</td>
+        <td>카드 사용 중 발생한 결정·판단·반복 패턴이 자동 큐잉된 자유 텍스트 본문 + 메타데이터.</td>
+      </tr>
+      <tr>
+        <td><strong>Domain Experts</strong></td>
+        <td>권한 단위별 자산 검수자</td>
+        <td>부문/사업부에서 선별. 조직×도메인 권한 단위별로 지정. 주당 3-5시간 검수 (역할 정의·평가 연계).</td>
+      </tr>
+      <tr>
+        <td><strong>지식 신뢰 단계</strong></td>
+        <td>검수 상태</td>
+        <td>raw signal → tacit candidate → 검수 통과 지식. 공개 범위(개인/권한 단위/...)와 직교 축.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>조직·계층</h2>
+  <table>
+    <thead>
+      <tr><th>용어</th><th>설명</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>부문 People팀</strong></td>
+        <td>본사 차원의 People팀. ❌ "People팀 본부" 표현 사용 금지.</td>
+      </tr>
+      <tr>
+        <td><strong>OO 프로</strong></td>
+        <td>임직원 호칭. ❌ "대리/과장" 표현 사용 금지.</td>
+      </tr>
+      <tr>
+        <td><strong>L3 / L4 / L5 / L6</strong></td>
+        <td>업무 프로세스 계층. L3·L4 = 분절된 기능 도메인. L5·L6 = 연속된 프로세스 흐름.</td>
+      </tr>
+      <tr>
+        <td><strong>권한 단위</strong></td>
+        <td>조직 × 도메인 조합. 예: MX사업부 × 채용. DW 접근 / 표준 RAG 범위 / 지식 공개 범위 / 차폐 정책 / Domain Experts 결정의 기본 단위.</td>
+      </tr>
+    </tbody>
+  </table>
+</main>
+
+</body>
+</html>

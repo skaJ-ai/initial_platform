@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FAQ — HR AX Platform Wiki</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<aside class="sidebar">
+  <a href="index.html" class="logo">HR <span>AX</span> Platform Wiki</a>
+  <div class="category">Overview</div>
+  <nav>
+    <a href="index.html">홈</a>
+    <a href="overview.html">한 장 개요 + Roadmap</a>
+  </nav>
+  <div class="category">Platform</div>
+  <nav>
+    <a href="data-governance.html">Data Governance</a>
+    <a href="harness-engineering.html">Harness Engineering</a>
+  </nav>
+  <div class="category">Concepts</div>
+  <nav>
+    <a href="terminology.html">용어 사전</a>
+    <a href="scenarios.html">사용 시나리오</a>
+  </nav>
+  <div class="category">Reference</div>
+  <nav>
+    <a href="faq.html" class="active">FAQ</a>
+    <a href="next-actions.html">다음 액션</a>
+  </nav>
+</aside>
+
+<main class="content">
+  <h1>FAQ</h1>
+  <p class="lead">Lab·다부서·정보보호센터·부문장과의 대화에서 자주 나온 질문 누적. 카테고리별 정리.</p>
+
+  <h2>A. 아키텍처 정합성</h2>
+
+  <details class="faq-item">
+    <summary>A1. 왜 HR AX는 별도 플랫폼인가?</summary>
+    <div class="faq-body">
+      <p>전사 공통 AI Platform과 사외 LLM은 모델·기능으로 연계할 수 있지만, HR 데이터의 보안 등급, 조직×도메인 권한, 검수 책임, 지식 공개 범위는 HR AX가 통제해야 한다.</p>
+      <ul>
+        <li><strong>보안</strong>: AI Tool 앞단의 안전 게이트. 기밀/민감 HR 데이터와 Knowledge의 원문 적재 금지, 분류·차폐·audit</li>
+        <li><strong>축적</strong>: Light user가 직접 RAG/DB를 관리하지 않아도 Work Card 사용 흐름에서 자산화</li>
+        <li><strong>권한</strong>: 조직×도메인 권한 단위별 DW·표준·지식 데이터 접근 통제</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="faq-item">
+    <summary>A2. 사외 LLM과 Tool/Skill/Agent의 관계?</summary>
+    <div class="faq-body">
+      <p>Function Calling 패턴. 사외 LLM은 Tool/Skill/Agent에 직접 접근 X. "Tool X를 인자 Y로 호출" 의도만 표현하고 실행은 플랫폼 내부에서.</p>
+    </div>
+  </details>
+
+  <details class="faq-item">
+    <summary>A3. Skill md는 누가 작성하고 어디에 저장되는가?</summary>
+    <div class="faq-body">
+      <p>초안: Domain Experts가 자동 추출 후보를 검토해 작성. 공식 등록: AX&CI Lab. 저장: 플랫폼 코드 리포지토리(정의) + 별도 DB(메타·임베딩).</p>
+    </div>
+  </details>
+
+  <h2>B. 데이터 등급과 처리</h2>
+
+  <details class="faq-item">
+    <summary>B1. 데이터는 몇 단계로 분류되는가?</summary>
+    <div class="faq-body">
+      <p>3단계 — 기밀 / 민감 / 일반.</p>
+      <table>
+        <thead><tr><th>등급</th><th>처리</th><th>모델</th></tr></thead>
+        <tbody>
+          <tr><td>기밀</td><td>사외 송출 금지</td><td>사내 LLM (GAUSS, 로그 미저장)</td></tr>
+          <tr><td>민감</td><td>비식별화 게이트 후 외부</td><td>사외 LLM</td></tr>
+          <tr><td>일반</td><td>그대로 외부</td><td>사외 LLM</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </details>
+
+  <details class="faq-item">
+    <summary>B2. 자동 분류는 어떻게 되나?</summary>
+    <div class="faq-body">
+      <p>데이터 민감도 분류 Agent (System Agent)가 사내 LLM 전담으로 통합 처리:</p>
+      <ol>
+        <li>1차: 권한 단위 기본 등급 룩업 (분류표 v0)</li>
+        <li>2차: 개인식별정보 패턴 대조 (사번/이름/평가 등)</li>
+        <li>3차: 사내 LLM(GAUSS) 한국어 맥락 보강</li>
+      </ol>
+      <p>출력: {등급, 차폐 후보 항목, 신뢰도}</p>
+    </div>
+  </details>
+
+  <h2>C. 자산화 운영</h2>
+
+  <details class="faq-item">
+    <summary>C1. Domain Experts는 누구인가?</summary>
+    <div class="faq-body">
+      <p>부문 또는 사업부에서 선별된 담당자. 조직×도메인 권한 단위별 검수 책임. 주당 3-5시간 검수 (역할 정의·평가 연계).</p>
+    </div>
+  </details>
+
+  <details class="faq-item">
+    <summary>C2. 자산 공개 범위 결정 주체?</summary>
+    <div class="faq-body">
+      <p>작성자 제안 + 검수자 확정 + 단계적 권한 escalation. 디폴트 좁게(개인 또는 권한 단위 한정).</p>
+      <ul>
+        <li>좁히는 것은 단독 가능</li>
+        <li>넓히는 것은 단계적: 권한 단위 → 도메인 종방향 → 전사 표준</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="faq-item">
+    <summary>C3. 검수 결과는 어떻게 분류되나?</summary>
+    <div class="faq-body">
+      <table>
+        <thead><tr><th>결과</th><th>처리</th></tr></thead>
+        <tbody>
+          <tr><td>승인</td><td>③ 지식 데이터에 등재</td></tr>
+          <tr><td>반려</td><td>작성자 피드백 + 일정 후 자동 폐기 또는 수정 후 재제출</td></tr>
+          <tr><td>보류</td><td>추가 정보 요청. 30일 미보강 시 자동 폐기</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </details>
+
+  <h2>D. 진입과 강제</h2>
+
+  <details class="faq-item">
+    <summary>D1. 강제 사용은 어떻게 작동하나?</summary>
+    <div class="faq-body">
+      <p>부문 People팀장 선언에 의존. 1차 출시는 선언 + 도구 매력으로 자발적 수렴 유도.</p>
+    </div>
+  </details>
+
+  <h2>E. 운영 현실</h2>
+
+  <details class="faq-item">
+    <summary>E1. Tool 추가 요청 흐름?</summary>
+    <div class="faq-body">
+      <pre><code>HR 담당자 → Tool 요청 (양식)
+   → AX&CI Lab 검토 (보안·중복·우선순위)
+   → AX&CI Lab 구현
+   → Tool 카탈로그 등록
+   → Agent에서 호출 가능</code></pre>
+    </div>
+  </details>
+
+  <h2>F. 네이밍 결정</h2>
+
+  <details class="faq-item">
+    <summary>F1. 데이터 3종 명칭 (확정)</summary>
+    <div class="faq-body">
+      <ul>
+        <li>① <strong>운영 데이터 (Master)</strong></li>
+        <li>② <strong>표준 데이터 (Standards)</strong></li>
+        <li>③ <strong>지식 데이터 (Knowledge)</strong></li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="faq-item">
+    <summary>F2. 호칭·트랙 표현 규약</summary>
+    <div class="faq-body">
+      <ul>
+        <li>"OO 프로" 사용. ❌ "대리/과장" 금지</li>
+        <li>"부문 People팀" 사용. ❌ "People팀 본부" 금지</li>
+        <li>"민감 데이터 여부" 표현 사용 (정치/코드 트랙 분리 X)</li>
+      </ul>
+    </div>
+  </details>
+
+  <h2 id="realism">H. 운영 현실 우려 (Realism)</h2>
+  <p class="dim">부문장·임원·정보보호센터 협의에서 자주 나오는 회의론에 대한 답변.</p>
+
+  <details class="faq-item">
+    <summary>H1. 분류 Agent 등으로 시스템 동작이 실제로 느려지지 않나?</summary>
+    <div class="faq-body">
+      <table>
+        <thead><tr><th>단계</th><th>추가 지연</th></tr></thead>
+        <tbody>
+          <tr><td>데이터 민감도 분류 Agent</td><td>~1-2초 (사내 LLM 짧은 분류 + PII 대조 + 룩업)</td></tr>
+          <tr><td>비식별화 게이트 (민감 등급일 때만)</td><td>~수백 ms</td></tr>
+          <tr><td>의미 검색 (RAG)</td><td>~100-500 ms</td></tr>
+          <tr><td><strong>총 추가 지연</strong></td><td><strong>1-3초 안팎</strong></td></tr>
+        </tbody>
+      </table>
+      <p>사외 LLM 본 호출 자체가 2-10초이므로 분류 지연은 전체의 10-30% 수준.</p>
+      <p><strong>완화 방법</strong>: 동일 입력 캐싱, 권한 단위 사전 분류, 분류·게이트 병렬화, 작은 모델 사용.</p>
+    </div>
+  </details>
+
+  <details class="faq-item">
+    <summary>H2. 노하우는 실제로 어떤 절차로 지식 데이터에 등재되나?</summary>
+    <div class="faq-body">
+      <pre><code>1. 카드 종료 시
+   - 사용자 "결정 한 줄" 입력
+   - 시스템이 결정 지점·반복 패턴 자동 감지
+
+2. 검수 후보 큐잉 (자유 텍스트 본문 + 메타)
+
+3. Domain Experts 검수 (승인 / 반려 / 보류)
+
+4. 승인 시:
+   - ③ 지식 데이터 테이블에 등재
+   - 공개 범위 부착
+
+5. 의미 검색 저장소에 벡터화
+   → 다음 카드 처리 시 retrieval로 자동 부착</code></pre>
+    </div>
+  </details>
+
+  <details class="faq-item">
+    <summary>H3. 자산화가 현실적으로 가능한가? (검수 부담 우려)</summary>
+    <div class="faq-body">
+      <p>가장 큰 운영 우려. 다층 완화 메커니즘 적용.</p>
+      <ul>
+        <li>Domain Experts 검수는 <strong>주당 3-5시간</strong> 수준. 역할 정의에 명시. People팀 평가에 연계.</li>
+        <li>한 자산 검수 5-10분 가정 시 주 30-60건 처리 가능.</li>
+      </ul>
+      <table>
+        <thead><tr><th>부담</th><th>완화</th></tr></thead>
+        <tbody>
+          <tr><td>검수자 시간 부족</td><td>평가 반영으로 인센티브 보장</td></tr>
+          <tr><td>검수 큐 폭증</td><td>자동 1차 분류·신뢰도 점수, 유사 자산 머지</td></tr>
+          <tr><td>1인 권한 단위 검수자 부담</td><td>자가 검수 허용 (개인/권한 단위 한정만 기본)</td></tr>
+          <tr><td>보류 자산 무한 누적</td><td>30일 미보강 자동 폐기</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </details>
+
+  <details class="faq-item">
+    <summary>H4. 노하우 → 표준 또는 Skill 승격은 어떤 방식인가?</summary>
+    <div class="faq-body">
+      <p>두 경로로 분리:</p>
+      <pre><code>③ 지식 데이터 (사례 누적)
+       │
+       ├─ 경로 A: 규정/기준/업무 프로세스 형태로 정형 가능
+       │           → ② 표준 데이터 신규 L6 노드 추가
+       │           → 드뭄
+       │
+       └─ 경로 B: 절차·기준 매뉴얼로 정형 가능
+                   → 신규 Skill md 등록
+                   → 잦음</code></pre>
+      <p>자동 포착은 동일 메커니즘. Lab이 4분기 결정: 새 L6 / 새 Skill / 둘 다 / 둘 다 아님.</p>
+    </div>
+  </details>
+
+  <details class="faq-item">
+    <summary>H5. People팀 업무 다수가 비정형인데 Card 시스템이 무의미하지 않나?</summary>
+    <div class="faq-body">
+      <p>정당한 우려. 비정형 비중 큰 것 사실. Card 시스템은 비정형도 1급 시민으로 처리.</p>
+      <p><strong>핵심 원리</strong>: Agent가 꼭 붙지 않아도 카드는 동작. Skill + Tool 자동 부착만으로 LLM이 카드 처리 가능. Domain Agent는 검증된 업무부터 점진적으로 추가.</p>
+      <table>
+        <thead><tr><th>카드 종류</th><th>처리 방식</th></tr></thead>
+        <tbody>
+          <tr><td>정형 + Domain Agent 있음</td><td>Domain Agent + Skill + Tool + Context</td></tr>
+          <tr><td>정형 + Domain Agent 없음</td><td>Skill + Tool + Context만 LLM에 주입 — Agent 미부착</td></tr>
+          <tr><td>비정형</td><td>도메인 일반 Skill·Context 부착 → 사용자 자유 입력</td></tr>
+        </tbody>
+      </table>
+      <p><strong>Domain Agent의 점진 확대</strong>: 1차 출시 시 검증된 업무에 한해 Domain Agent 우선 구축. 운영 중 반복 패턴 입증 업무에 신규 Agent 추가.</p>
+      <p><strong>비정형 → 정형 승격</strong>: 비정형 카드의 결정·판단·반복 패턴 누적 → 신규 L6 / 신규 Skill / 신규 Domain Agent 후보 → Lab 결정으로 정형화. Card는 비정형을 정형으로 전환하는 도구.</p>
+    </div>
+  </details>
+</main>
+
+</body>
+</html>

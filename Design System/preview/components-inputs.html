@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&display=swap');
+  @font-face { font-family: 'Pretendard Variable'; src: url('../fonts/PretendardVariable.woff2') format('woff2-variations'); font-weight: 45 920; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Pretendard Variable','Pretendard',sans-serif; background: #fcfcfc; padding: 20px 24px; }
+  .label { font-size: 10px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #0f4c81; font-family: 'Manrope',sans-serif; margin-bottom: 12px; }
+  .row { display: flex; gap: 16px; align-items: flex-start; }
+  .col { display: flex; flex-direction: column; gap: 8px; flex: 1; }
+  .field-label { font-size: 12px; font-weight: 600; color: #0d1f33; }
+  input, textarea, select {
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 12px;
+    padding: 10px 14px; font-size: 14px; color: #0d1f33; outline: none;
+    font-family: 'Pretendard Variable','Pretendard',sans-serif; width: 100%;
+  }
+  input::placeholder, textarea::placeholder { color: #8fa5be; }
+  .input-focus { border-color: #0f4c81; }
+  .input-error { border-color: #cf222e; background: #fffcfc; }
+  textarea { resize: none; height: 64px; line-height: 1.6; }
+  .helper { font-size: 11px; color: #8fa5be; }
+  .helper-error { color: #cf222e; }
+</style>
+</head>
+<body>
+<div class="label">Form Inputs</div>
+<div class="row">
+  <div class="col">
+    <div class="field-label">기본 입력</div>
+    <input placeholder="업무 카드 제목을 입력하세요" />
+    <div class="helper">input-surface · border-radius-md</div>
+  </div>
+  <div class="col">
+    <div class="field-label">포커스 상태</div>
+    <input class="input-focus" value="신규 채용 프로세스 검토" />
+    <div class="helper">border-color → --color-accent</div>
+  </div>
+  <div class="col">
+    <div class="field-label">오류 상태</div>
+    <input class="input-error" value="잘못된 입력값" />
+    <div class="helper helper-error">필수 항목입니다</div>
+  </div>
+</div>
+<div style="margin-top:12px">
+  <div class="field-label" style="margin-bottom:6px">텍스트 영역</div>
+  <textarea placeholder="작업 의도와 맥락을 입력하세요. HR AX Copilot이 이전 세션의 흐름을 이어갑니다."></textarea>
+</div>
+</body>
+</html>

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Harness Engineering — HR AX Platform Wiki</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<aside class="sidebar">
+  <a href="index.html" class="logo">HR <span>AX</span> Platform Wiki</a>
+  <div class="category">Overview</div>
+  <nav>
+    <a href="index.html">홈</a>
+    <a href="overview.html">한 장 개요 + Roadmap</a>
+  </nav>
+  <div class="category">Platform</div>
+  <nav>
+    <a href="data-governance.html">Data Governance</a>
+    <a href="harness-engineering.html" class="active">Harness Engineering</a>
+  </nav>
+  <div class="category">Concepts</div>
+  <nav>
+    <a href="terminology.html">용어 사전</a>
+    <a href="scenarios.html">사용 시나리오</a>
+  </nav>
+  <div class="category">Reference</div>
+  <nav>
+    <a href="faq.html">FAQ</a>
+    <a href="next-actions.html">다음 액션</a>
+  </nav>
+</aside>
+
+<main class="content">
+  <h1>Harness Engineering <span class="badge">Page 5</span></h1>
+  <p class="lead">
+    LLM이 HR 맥락 위에서 정확히 일하도록 — Context · 실행 · 외부 연계를 고려한 인프라 설계.
+    HR 담당자는 업무 단위로 진입만, 인프라 자동 조립과 외부 시스템·AI 연계는 플랫폼이 처리.
+  </p>
+
+  <h2>3대 인프라</h2>
+  <div class="cards cards-3">
+    <div class="card cyan">
+      <div class="card-label">1. Context 공급</div>
+      <h4>HR 맥락을 LLM에 공급</h4>
+      <p>Process · 인사 규정 · 인사 기준 · 노하우(지식 데이터)</p>
+    </div>
+    <div class="card purple">
+      <div class="card-label">2. 실행체계 운영</div>
+      <h4>Agent · Skill · Tool 3계층</h4>
+      <p>LLM 처리 단위 + 절차 매뉴얼 + 결정적 코드</p>
+    </div>
+    <div class="card amber">
+      <div class="card-label">3. 외부 연계</div>
+      <h4>시스템 · AI 서비스 허브</h4>
+      <p>인사 시스템·DW · GAUSS · 사외 LLM · 사내 AI Tool</p>
+    </div>
+  </div>
+
+  <h2>1. Context 공급 — HR 맥락을 LLM에 공급</h2>
+  <table>
+    <thead>
+      <tr><th>요소</th><th>설명</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Process</strong></td>
+        <td>L3-L6 업무 프로세스 트리. Phase 1 산물 + 운영 중 신규 L6 추가.</td>
+      </tr>
+      <tr>
+        <td><strong>인사 규정</strong></td>
+        <td>HR 제도, 규정, 취업규칙 등.</td>
+      </tr>
+      <tr>
+        <td><strong>인사 기준</strong></td>
+        <td>평가·근태·보상 관련 기준, 표준 양식 등.</td>
+      </tr>
+      <tr>
+        <td><strong>노하우(사례)</strong></td>
+        <td>지식 데이터 = 검수 통과한 판단·결정·예외 케이스. 자산화 누적.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>2. 실행체계 운영 — Agent · Skill · Tool 3계층</h2>
+
+  <h3>Agent</h3>
+  <div class="kv">
+    <div class="kv-label">본질</div>
+    <div class="kv-value">LLM 처리 단위 (판단·결정의 주체)</div>
+  </div>
+  <div class="cards cards-2">
+    <div class="card">
+      <div class="card-label">Domain Agent</div>
+      <h4>HR 도메인 업무를 직접 처리</h4>
+      <p><strong>검증된 업무부터 점진 구축</strong>. 없는 카드는 Skill·Tool만으로도 처리 가능.<br>
+        예: 채용 직무적합성평가, 임원인사 근황 작성, 제도 모판 제작</p>
+    </div>
+    <div class="card">
+      <div class="card-label">System Agent</div>
+      <h4>플랫폼 백엔드 운영 (사용자 비노출)</h4>
+      <p>예: 데이터 민감도 분류 Agent, 차폐 검사 Agent, 자산 추출 Agent</p>
+    </div>
+  </div>
+
+  <h3>Skill</h3>
+  <div class="kv">
+    <div class="kv-label">본질</div>
+    <div class="kv-value">절차·기준 매뉴얼 (md)</div>
+  </div>
+  <div class="kv">
+    <div class="kv-label">설명</div>
+    <div class="kv-value">Lab이 정형화·등록한 작업 가이드. 사례가 충분히 쌓이면 신규 Skill로 승격.</div>
+  </div>
+  <p class="dim"><em>지식 데이터(사례집)와 구분</em>: Skill은 정형 매뉴얼, 지식 데이터는 개별 사례·판단 기록. 사례 → 매뉴얼 승격 관계.</p>
+
+  <h3>Tool</h3>
+  <div class="kv">
+    <div class="kv-label">본질</div>
+    <div class="kv-value">결정적 코드 동작</div>
+  </div>
+  <div class="kv">
+    <div class="kv-label">설명</div>
+    <div class="kv-value">정확한 동작 (조회·계산·연동). Agent가 있으면 Agent가 호출, 없으면 Skill 매뉴얼 지시에 따라 호출.</div>
+  </div>
+
+  <h2>3. 외부 연계 — 시스템 · AI 서비스 허브</h2>
+  <table>
+    <thead>
+      <tr><th>대상</th><th>역할</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>인사 시스템 / Data Warehouse</strong></td>
+        <td>원천 인사 데이터 통합 저장. HR AX는 DW에서 필요 범위만 인출.</td>
+      </tr>
+      <tr>
+        <td><strong>사내 LLM (GAUSS)</strong></td>
+        <td>기밀 데이터 처리 (로그 미저장). 사내 임베딩 + 분류 보강.</td>
+      </tr>
+      <tr>
+        <td><strong>사외 LLM (Chat GPT, Gemini 등)</strong></td>
+        <td>민감 데이터 (비식별화 후), 일반 데이터 처리.</td>
+      </tr>
+      <tr>
+        <td><strong>사내 AI Tool (SPICA, AX Hub 등)</strong></td>
+        <td>플랫폼 권한·차폐 정책 통과 시 연계.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>카드 진입 시 자동 조립 흐름</h2>
+  <div class="diagram">
+사용자가 카드 진입
+       |
+       v
+[Process 트리에 정형 매핑된 카드?]
+   |
+   +-- Yes (정형) → Domain Agent 부착 (있을 때)
+   |                + 그 노드의 Skill 자동 부착
+   |                + 도메인 Context (규정·기준·노하우) 부착
+   |                + Tool 권한 부여
+   |
+   |              → Domain Agent 없을 때:
+   |                + Skill + Tool + Context만 부착하고
+   |                + LLM 기본 호출로 처리
+   |
+   +-- No (비정형) → 사용자가 도메인 지정 (또는 자동 추정)
+                     + 도메인 일반 Skill·Context 부착
+                     + 사용자 자유 입력
+                     + 결정·판단 누적 → 신규 L6/Skill/Agent 후보
+  </div>
+
+  <h2>플랫폼 5 Layer 구조</h2>
+  <table>
+    <thead>
+      <tr><th>Layer</th><th>구성</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>L1. 사용자 진입</strong></td>
+        <td>Work-space (조직×도메인 권한 단위) + Work Card</td>
+      </tr>
+      <tr>
+        <td><strong>L2. 안전 게이트</strong></td>
+        <td>데이터 민감도 분류 Agent · 비식별화 게이트 · Function Calling Broker · 플랫폼 자체 감사 로그</td>
+      </tr>
+      <tr>
+        <td><strong>L3. 실행</strong></td>
+        <td>Domain Agent · System Agent · Skill Registry · Tool 카탈로그</td>
+      </tr>
+      <tr>
+        <td><strong>L4. 데이터 3종</strong></td>
+        <td>① 운영(Master) · ② 표준(Standards) · ③ 지식(Knowledge)</td>
+      </tr>
+      <tr>
+        <td><strong>L5. 외부 연계</strong></td>
+        <td>DW · 사내 LLM · 사외 LLM · 사내 AI Tool</td>
+      </tr>
+    </tbody>
+  </table>
+</main>
+
+</body>
+</html>

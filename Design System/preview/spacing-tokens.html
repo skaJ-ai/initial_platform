@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@600;800&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Manrope', sans-serif; background: #fcfcfc; padding: 20px 24px; }
+  .label { font-size: 10px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #0f4c81; margin-bottom: 14px; }
+  .row { display: flex; align-items: flex-end; gap: 12px; }
+  .token { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+  .bar { background: #d4e4f7; border-radius: 4px; width: 32px; }
+  .name { font-size: 9px; font-weight: 700; color: #8fa5be; font-family: 'SFMono-Regular', monospace; }
+  .val { font-size: 9px; color: #4a6080; }
+</style>
+</head>
+<body>
+<div class="label">Spacing Scale — 4px Base</div>
+<div class="row">
+  <div class="token"><div class="bar" style="height:4px"></div><span class="name">1</span><span class="val">4px</span></div>
+  <div class="token"><div class="bar" style="height:8px"></div><span class="name">2</span><span class="val">8px</span></div>
+  <div class="token"><div class="bar" style="height:12px"></div><span class="name">3</span><span class="val">12px</span></div>
+  <div class="token"><div class="bar" style="height:16px"></div><span class="name">4</span><span class="val">16px</span></div>
+  <div class="token"><div class="bar" style="height:20px"></div><span class="name">5</span><span class="val">20px</span></div>
+  <div class="token"><div class="bar" style="height:24px"></div><span class="name">6</span><span class="val">24px</span></div>
+  <div class="token"><div class="bar" style="height:32px"></div><span class="name">8</span><span class="val">32px</span></div>
+  <div class="token"><div class="bar" style="height:40px"></div><span class="name">10</span><span class="val">40px</span></div>
+  <div class="token"><div class="bar" style="height:48px"></div><span class="name">12</span><span class="val">48px</span></div>
+  <div class="token"><div class="bar" style="height:64px"></div><span class="name">16</span><span class="val">64px</span></div>
+</div>
+</body>
+</html>

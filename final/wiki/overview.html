@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Overview — HR AX Platform Wiki</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<aside class="sidebar">
+  <a href="index.html" class="logo">HR <span>AX</span> Platform Wiki</a>
+
+  <div class="category">Overview</div>
+  <nav>
+    <a href="index.html">홈</a>
+    <a href="overview.html" class="active">한 장 개요 + Roadmap</a>
+  </nav>
+
+  <div class="category">Platform</div>
+  <nav>
+    <a href="data-governance.html">Data Governance</a>
+    <a href="harness-engineering.html">Harness Engineering</a>
+  </nav>
+
+  <div class="category">Concepts</div>
+  <nav>
+    <a href="terminology.html">용어 사전</a>
+    <a href="scenarios.html">사용 시나리오</a>
+  </nav>
+
+  <div class="category">Reference</div>
+  <nav>
+    <a href="faq.html">FAQ</a>
+    <a href="next-actions.html">다음 액션</a>
+  </nav>
+</aside>
+
+<main class="content">
+  <h1>Overview</h1>
+  <p class="lead">한 장 요약 + 4 Phase Roadmap.</p>
+
+  <h2>왜 HR은 독립 플랫폼인가</h2>
+  <div class="cards cards-3">
+    <div class="card cyan">
+      <div class="card-label">이유 1</div>
+      <h4>HR 데이터 특수성</h4>
+      <p>임직원 개인정보·평가·인사 결정은 사외 LLM에 직접 보낼 수 없고 전사 공통 AI Platform에도 올릴 수 없음. AI Tool 앞단의 안전 게이트가 필요.</p>
+    </div>
+    <div class="card purple">
+      <div class="card-label">이유 2</div>
+      <h4>HR 도메인 권한 체계</h4>
+      <p>부문 × 사업부 × 도메인 교차 권한은 일반 RBAC로 표현 불가. 권한 단위별 등급·차폐 정책·검수자가 모두 다름. HR 도메인 지식 없으면 정책 자체를 만들 수 없음.</p>
+    </div>
+    <div class="card rose">
+      <div class="card-label">이유 3</div>
+      <h4>People 조직 자산화 책임</h4>
+      <p>HR 담당자는 Light user(AI 빌더 아님). 도메인별 RAG·로컬 DB 직접 운영 불가. People팀이 단일 운영 책임을 가져야 자산이 누적됨.</p>
+    </div>
+  </div>
+
+  <h2>HR AX 진행 Roadmap</h2>
+  <p>Phase 1·2 산물 위에 Phase 3 플랫폼이 올라가고, Phase 4에서 AI Native 표준업무로 전면 도입.</p>
+  <table>
+    <thead>
+      <tr><th>Phase</th><th>기간</th><th>제목</th><th>핵심 산물</th><th>상태</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Phase 1</strong></td>
+        <td>'25.12 ~ '26.3</td>
+        <td>HR 업무 프로세스 / FTE 분석</td>
+        <td>L4-L6 업무 트리, AI 도입 후보 식별</td>
+        <td><span class="tag green">완료</span></td>
+      </tr>
+      <tr>
+        <td><strong>Phase 2</strong></td>
+        <td>'26.3 ~ '26.6</td>
+        <td>교육 Quick-Win 과제 + 도메인별 Agent 개발</td>
+        <td>Top-down(도메인 주도) + Bottom-up(사업부 주도) 병행</td>
+        <td><span class="tag amber">진행 중</span></td>
+      </tr>
+      <tr>
+        <td><strong>Phase 3</strong></td>
+        <td>'26 하반기</td>
+        <td>HR AX 플랫폼 구축</td>
+        <td>Data Governance + Harness Engineering 두 축</td>
+        <td><span class="tag cyan">예정</span></td>
+      </tr>
+      <tr>
+        <td><strong>Phase 4</strong></td>
+        <td>'27</td>
+        <td>AI Native 표준업무 프로세스 전면 도입</td>
+        <td>Digital Worker 우선 처리 업무 적용</td>
+        <td><span class="tag cyan">예정</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>한 장 아키텍처</h2>
+  <div class="diagram">
+[사용자 = HR 담당자]
+       |
+       | 조직 역할 + 담당 도메인 → 권한 단위 결정
+       v
++----------------------------------------------------+
+|           HR AX Platform (안전 게이트)             |
+|                                                    |
+|   Work-space / Work Card                           |
+|         |                                          |
+|         v                                          |
+|   데이터 민감도 분류 Agent                          |
+|         |                                          |
+|   +--기밀--+   +--민감--+   +--일반--+              |
+|   | GAUSS  |   | 비식별화|   | 사외 LLM|             |
+|   |로그미저장|   | 게이트  |   | 그대로 |             |
+|   +--------+   +--------+   +--------+             |
+|         |          |            |                  |
+|         v          v            v                  |
+|   Function Calling Broker (Tool 실행은 사내)       |
+|         |                                          |
+|         v                                          |
+|   플랫폼 자체 감사 로그                            |
+|                                                    |
+|   ① Master | ② Standards | ③ Knowledge             |
++----------------------------------------------------+
+       ^                              ^
+       | DW에서 필요 범위만           | 검수 후보 → 승인/반려/보류
+       |                              |
+   [DW]                          [Domain Experts]
+   GHRP / 삼성U / 채용Hub
+  </div>
+
+  <h2>HR 일하는 방식의 변화</h2>
+  <table>
+    <thead>
+      <tr><th>항목</th><th>Before</th><th>After</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>사외 LLM 사용</strong></td>
+        <td>임직원 정보를 그대로 입력 → 보안 위험 상존</td>
+        <td>자동 등급 분류 → 비식별화 게이트 통과 후 안전 사용</td>
+      </tr>
+      <tr>
+        <td><strong>콜드 스타트</strong></td>
+        <td>매 세션 빈 채팅창에서 처음부터</td>
+        <td>Work Card 진입 시 회사 컨텍스트 + 지난 판단이 자동 부착</td>
+      </tr>
+      <tr>
+        <td><strong>노하우</strong></td>
+        <td>담당자 머릿속 또는 개인 메모</td>
+        <td>검수형 자산화 → People 조직 지식 자본</td>
+      </tr>
+      <tr>
+        <td><strong>권한</strong></td>
+        <td>일반 RBAC, 도메인 정책 따로 관리</td>
+        <td>조직×도메인 권한 단위 + 5단계 공개 범위로 일원화</td>
+      </tr>
+      <tr>
+        <td><strong>후임 인계</strong></td>
+        <td>인수인계 문서에 의존</td>
+        <td>권한 단위 자산이 후임에게 자동 retrieval</td>
+      </tr>
+    </tbody>
+  </table>
+</main>
+
+</body>
+</html>

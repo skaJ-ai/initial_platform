@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HR AX Worktable — Workspace</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+@font-face {
+  font-family: 'Pretendard Variable';
+  src: url('../../fonts/PretendardVariable.woff2') format('woff2-variations');
+  font-weight: 45 920; font-style: normal; font-display: swap;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --font-headline: 'Manrope', 'Pretendard Variable', sans-serif;
+  --font-sans: 'Pretendard Variable', 'Pretendard', -apple-system, sans-serif;
+  --font-mono: 'SFMono-Regular', Consolas, monospace;
+  --color-bg: #fcfcfc; --color-bg-elevated: #ffffff; --color-bg-sunken: #f5f5f7;
+  --color-border: #e5e7eb; --color-border-subtle: #f0f0f2; --color-border-strong: #d1d5db;
+  --color-text: #0d1f33; --color-text-secondary: #4a6080; --color-text-tertiary: #8fa5be; --color-text-inverse: #ffffff;
+  --color-accent: #0f4c81; --color-accent-light: #d4e4f7; --color-accent-hover: #0a3d6b;
+  --color-teal: #00bfa5; --color-teal-light: #e0faf6; --color-teal-hover: #00a892;
+  --color-success: #1b873f; --color-success-light: #e6f6ec;
+  --color-warning: #d08700; --color-warning-light: #fff4d4;
+  --color-error: #cf222e; --color-error-light: #ffebe9;
+  --color-info: #0969da; --color-info-light: #ddf4ff;
+  --radius-sm: 8px; --radius-md: 12px; --radius-lg: 20px; --radius-full: 9999px;
+  --shadow-1: 0 2px 6px rgba(15,76,129,0.06);
+  --shadow-2: 0 4px 14px rgba(15,76,129,0.09);
+  --shadow-3: 0 8px 28px rgba(15,76,129,0.12);
+  --duration-fast: 120ms; --duration-normal: 200ms;
+  --ease-out: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+html { -webkit-font-smoothing: antialiased; height: 100%; }
+body { font-family: var(--font-sans); background: var(--color-bg); color: var(--color-text); height: 100%; display: flex; flex-direction: column; line-height: 1.65; letter-spacing: -0.01em; }
+h1,h2,h3,h4 { font-family: var(--font-headline); font-weight: 700; letter-spacing: -0.025em; }
+
+/* Layout */
+.app { display: flex; height: 100vh; overflow: hidden; }
+.sidebar { width: 240px; flex-shrink: 0; background: var(--color-bg-elevated); border-right: 1px solid var(--color-border-subtle); display: flex; flex-direction: column; overflow-y: auto; }
+.main { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+
+/* Sidebar */
+.sidebar-logo { display: flex; align-items: center; gap: 10px; padding: 20px 16px 16px; }
+.logo-icon { width: 34px; height: 34px; border-radius: 9px; background: var(--color-accent); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 11px; font-weight: 700; font-family: var(--font-mono); flex-shrink: 0; box-shadow: var(--shadow-1); }
+.logo-name { font-size: 15px; font-weight: 700; color: var(--color-accent); letter-spacing: -0.02em; line-height: 1.1; }
+.logo-sub { font-size: 9px; font-weight: 600; color: var(--color-text-secondary); letter-spacing: 0.1em; }
+.sidebar-nav { display: flex; flex-direction: column; gap: 2px; padding: 0 10px; flex: 1; }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: var(--radius-sm); font-size: 13.5px; font-weight: 500; color: var(--color-text-secondary); cursor: pointer; transition: background var(--duration-fast), color var(--duration-fast); text-decoration: none; }
+.nav-item:hover { background: var(--color-bg-sunken); color: var(--color-text); }
+.nav-item.active { background: var(--color-accent-light); color: var(--color-accent); font-weight: 600; }
+.nav-code { width: 28px; border-radius: var(--radius-full); background: var(--color-bg-sunken); padding: 2px 0; text-align: center; font-family: var(--font-mono); font-size: 9px; font-weight: 700; color: var(--color-text-tertiary); flex-shrink: 0; }
+.nav-item.active .nav-code { background: rgba(15,76,129,0.12); color: var(--color-accent); }
+.sidebar-footer { border-top: 1px solid var(--color-border-subtle); padding: 14px 16px; }
+.user-name { font-size: 13px; font-weight: 700; color: var(--color-text); }
+.user-ws { font-size: 10px; color: var(--color-text-secondary); margin-top: 1px; }
+.btn-sm-outline { margin-top: 8px; display: block; width: 100%; padding: 7px; text-align: center; border: 1px solid var(--color-border); border-radius: var(--radius-md); font-size: 12px; font-weight: 500; color: var(--color-text-secondary); cursor: pointer; background: none; font-family: var(--font-sans); }
+
+/* Topbar */
+.topbar { background: rgba(252,252,252,0.9); backdrop-filter: blur(12px); border-bottom: 1px solid var(--color-border-subtle); padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; }
+.topbar-title { font-family: var(--font-headline); font-size: 17px; font-weight: 700; color: var(--color-text); }
+.topbar-meta { font-family: var(--font-mono); font-size: 11px; color: var(--color-text-tertiary); }
+.topbar-actions { display: flex; gap: 8px; align-items: center; }
+.btn-teal { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; background: var(--color-teal); color: #fff; border: none; border-radius: var(--radius-md); font-size: 13px; font-weight: 600; cursor: pointer; font-family: var(--font-sans); transition: background var(--duration-fast), transform var(--duration-fast); }
+.btn-teal:hover { background: var(--color-teal-hover); transform: translateY(-1px); }
+.btn-primary { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; background: linear-gradient(135deg, #00355f 0%, var(--color-accent) 100%); color: #fff; border: none; border-radius: var(--radius-md); font-size: 13px; font-weight: 600; cursor: pointer; font-family: var(--font-sans); transition: opacity var(--duration-fast), transform var(--duration-fast); }
+.btn-primary:hover { opacity: 0.92; transform: translateY(-1px); }
+.btn-secondary { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; background: transparent; color: var(--color-text-secondary); border: 1px solid var(--color-border); border-radius: var(--radius-md); font-size: 13px; font-weight: 500; cursor: pointer; font-family: var(--font-sans); }
+.btn-secondary:hover { border-color: var(--color-border-strong); color: var(--color-text); }
+
+/* Badge */
+.badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: var(--radius-full); font-size: 11.5px; font-weight: 500; line-height: 1.4; }
+.badge-accent { background: var(--color-accent-light); color: var(--color-accent); }
+.badge-teal { background: var(--color-teal-light); color: var(--color-teal); }
+.badge-warning { background: var(--color-warning-light); color: var(--color-warning); }
+.badge-info { background: var(--color-info-light); color: var(--color-info); }
+.badge-success { background: var(--color-success-light); color: var(--color-success); }
+.badge-neutral { background: var(--color-bg-sunken); color: var(--color-text-secondary); border: 1px solid var(--color-border); }
+
+/* Content area */
+.content { padding: 28px 28px; flex: 1; }
+.section-label { font-family: var(--font-headline); font-size: 11px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-accent); }
+.meta { font-family: var(--font-mono); font-size: 11px; color: var(--color-text-tertiary); letter-spacing: 0.02em; }
+
+/* Session cards grid */
+.sessions-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+.session-card { background: var(--color-bg-elevated); border: 1px solid #e2e8f0; border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 10px; box-shadow: var(--shadow-1); cursor: pointer; transition: transform var(--duration-normal) var(--ease-out), box-shadow var(--duration-normal) var(--ease-out), border-color var(--duration-normal) var(--ease-out); }
+.session-card:hover { transform: translateY(-3px); border-color: rgba(15,76,129,0.3); box-shadow: var(--shadow-2); }
+.card-header { display: flex; align-items: center; justify-content: space-between; }
+.card-title { font-family: var(--font-headline); font-size: 14px; font-weight: 700; color: var(--color-text); line-height: 1.3; }
+.card-meta-row { display: flex; align-items: center; justify-content: space-between; }
+
+/* KPI row */
+.kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 28px; }
+.kpi-card { background: var(--color-bg-elevated); border: 1px solid var(--color-border-subtle); border-radius: var(--radius-md); padding: 16px 18px; box-shadow: var(--shadow-1); }
+.kpi-val { font-family: var(--font-headline); font-size: 28px; font-weight: 800; letter-spacing: -0.04em; color: var(--color-text); line-height: 1; }
+.kpi-label { font-size: 11.5px; color: var(--color-text-secondary); margin-top: 4px; }
+
+/* Empty state */
+.empty-state { position: relative; overflow: hidden; background: radial-gradient(circle at top left, rgba(212,228,247,0.9), transparent 55%), var(--color-bg-sunken); border: 1px dashed var(--color-border-strong); border-radius: 16px; padding: 32px; text-align: center; }
+.empty-state::after { content: 'AX'; position: absolute; right: 16px; bottom: 4px; font-family: var(--font-headline); font-size: 72px; font-weight: 800; letter-spacing: -0.08em; color: rgba(15,76,129,0.07); line-height: 1; pointer-events: none; }
+
+/* Tabs */
+.tabs { display: flex; gap: 0; border-bottom: 1px solid var(--color-border); margin-bottom: 20px; }
+.tab { padding: 10px 0; margin-right: 24px; font-size: 13.5px; font-weight: 500; color: var(--color-text-tertiary); border-bottom: 2px solid transparent; cursor: pointer; transition: color var(--duration-fast), border-color var(--duration-fast); background: none; border-top: none; border-left: none; border-right: none; font-family: var(--font-sans); }
+.tab:hover { color: var(--color-text-secondary); }
+.tab.active { color: var(--color-text); border-bottom-color: var(--color-accent); font-weight: 600; }
+
+/* Screen overlay */
+.screen { display: none; }
+.screen.active { display: flex; flex-direction: column; flex: 1; }
+
+/* New session form */
+.form-card { background: var(--color-bg-elevated); border: 1px solid var(--color-border); border-radius: 16px; padding: 28px; max-width: 680px; box-shadow: var(--shadow-2); }
+.form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 18px; }
+.form-label { font-size: 13px; font-weight: 600; color: var(--color-text); }
+.form-input { background: var(--color-bg-elevated); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 10px 14px; font-size: 14px; color: var(--color-text); outline: none; font-family: var(--font-sans); transition: border-color var(--duration-fast); width: 100%; }
+.form-input:focus { border-color: var(--color-accent); }
+.form-input::placeholder { color: var(--color-text-tertiary); }
+textarea.form-input { resize: none; height: 80px; line-height: 1.6; }
+.mode-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.mode-option { border: 2px solid var(--color-border); border-radius: var(--radius-md); padding: 14px; cursor: pointer; transition: border-color var(--duration-fast), background var(--duration-fast); }
+.mode-option:hover { border-color: var(--color-border-strong); }
+.mode-option.selected { border-color: var(--color-teal); background: var(--color-teal-light); }
+.mode-option.selected.validate { border-color: var(--color-warning); background: var(--color-warning-light); }
+.mode-option.selected.synthesize { border-color: var(--color-info); background: var(--color-info-light); }
+.mode-option.selected.write { border-color: var(--color-success); background: var(--color-success-light); }
+.mode-title { font-size: 13px; font-weight: 700; color: var(--color-text); margin-top: 6px; }
+.mode-desc { font-size: 11.5px; color: var(--color-text-secondary); margin-top: 4px; line-height: 1.5; }
+
+/* Canvas / chat area */
+.canvas-layout { display: flex; flex: 1; gap: 0; overflow: hidden; }
+.chat-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.chat-messages { flex: 1; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 16px; }
+.msg { max-width: 80%; }
+.msg-user { align-self: flex-end; background: var(--color-accent); color: #fff; border-radius: 14px 14px 4px 14px; padding: 12px 16px; font-size: 13.5px; line-height: 1.6; }
+.msg-ai { align-self: flex-start; background: var(--color-bg-elevated); border: 1px solid var(--color-border); border-radius: 4px 14px 14px 14px; padding: 14px 16px; font-size: 13.5px; line-height: 1.7; color: var(--color-text-secondary); box-shadow: var(--shadow-1); }
+.msg-ai-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.ai-icon { width: 22px; height: 22px; border-radius: 6px; background: var(--color-accent); display: flex; align-items: center; justify-content: center; }
+.ai-icon svg { width: 12px; height: 12px; fill: #fff; }
+.chat-input-area { padding: 14px 20px; border-top: 1px solid var(--color-border-subtle); background: var(--color-bg-elevated); display: flex; gap: 10px; align-items: flex-end; }
+.chat-input { flex: 1; border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 10px 14px; font-size: 14px; font-family: var(--font-sans); color: var(--color-text); outline: none; resize: none; height: 44px; line-height: 1.4; }
+.chat-input:focus { border-color: var(--color-accent); }
+.context-panel { width: 280px; flex-shrink: 0; border-left: 1px solid var(--color-border-subtle); overflow-y: auto; padding: 16px; background: var(--color-bg-sunken); display: flex; flex-direction: column; gap: 14px; }
+.panel-section-title { font-size: 11px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--color-accent); font-family: var(--font-headline); margin-bottom: 8px; }
+.source-item { background: var(--color-bg-elevated); border: 1px solid var(--color-border); border-radius: var(--radius-sm); padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; }
+.source-name { font-size: 12px; font-weight: 600; color: var(--color-text); }
+.source-meta { font-family: var(--font-mono); font-size: 10px; color: var(--color-text-tertiary); }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon"><svg width="20" height="20" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="3" width="9" height="9" rx="2" fill="white" opacity="0.9"/><rect x="14" y="3" width="9" height="9" rx="2" fill="white" opacity="0.55"/><rect x="3" y="14" width="9" height="9" rx="2" fill="white" opacity="0.55"/><rect x="14" y="14" width="9" height="9" rx="2" fill="white" opacity="0.25"/></svg></div>
+      <div>
+        <div class="logo-name">HR AX Worktable</div>
+        <div class="logo-sub">AI Native 작업공간</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <a class="nav-item active" id="nav-workbench" onclick="navigate('workbench')">
+        <span class="nav-code">WB</span>워크벤치
+      </a>
+      <a class="nav-item" id="nav-new" onclick="navigate('new')">
+        <span class="nav-code">NW</span>새 작업
+      </a>
+      <a class="nav-item" id="nav-cards" onclick="navigate('cards')">
+        <span class="nav-code">WC</span>업무 카드
+      </a>
+      <a class="nav-item" id="nav-review" onclick="navigate('review')">
+        <span class="nav-code">RV</span>검토 큐
+      </a>
+      <a class="nav-item" id="nav-knowledge" onclick="navigate('knowledge')">
+        <span class="nav-code">KB</span>지식 라이브러리
+      </a>
+      <a class="nav-item" id="nav-wiki" onclick="navigate('wiki')">
+        <span class="nav-code">WK</span>공유 위키
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-name">김민지</div>
+      <div class="user-ws">HR 기획팀 워크스페이스</div>
+      <button class="btn-sm-outline">로그아웃</button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+
+    <!-- WORKBENCH SCREEN -->
+    <div class="screen active" id="screen-workbench">
+      <div class="topbar">
+        <div>
+          <div class="topbar-title">워크벤치</div>
+          <div class="topbar-meta">HR 기획팀 · 4개 진행 중</div>
+        </div>
+        <div class="topbar-actions">
+          <button class="btn-secondary">필터</button>
+          <button class="btn-teal" onclick="navigate('new')">+ 새 작업</button>
+        </div>
+      </div>
+      <div class="content">
+        <div class="kpi-row">
+          <div class="kpi-card">
+            <div class="kpi-val">12</div>
+            <div class="kpi-label">전체 세션</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-val">4</div>
+            <div class="kpi-label">진행 중</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-val">7</div>
+            <div class="kpi-label">완료</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-val">3</div>
+            <div class="kpi-label">업무 카드</div>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <span class="section-label">최근 세션</span>
+          <span class="meta">최신순 정렬</span>
+        </div>
+
+        <div class="sessions-grid">
+          <div class="session-card" onclick="navigate('session')">
+            <div class="card-header">
+              <span class="badge badge-teal">발산</span>
+              <span style="font-size:11.5px;font-weight:600;color:var(--color-text-secondary)">● 진행 중</span>
+            </div>
+            <div class="card-title">신규 채용 프로세스 재설계 방향 탐색</div>
+            <div class="card-meta-row">
+              <span class="meta">메시지 8개 · 자료 2개</span>
+              <span class="meta">04-19 14:32</span>
+            </div>
+          </div>
+          <div class="session-card" onclick="navigate('session')">
+            <div class="card-header">
+              <span class="badge badge-warning">검증</span>
+              <span style="font-size:11.5px;font-weight:600;color:var(--color-text-secondary)">● 진행 중</span>
+            </div>
+            <div class="card-title">OKR 성과 평가 기준 반론 및 리스크 검토</div>
+            <div class="card-meta-row">
+              <span class="meta">메시지 15개 · 자료 4개</span>
+              <span class="meta">04-18 10:05</span>
+            </div>
+          </div>
+          <div class="session-card" onclick="navigate('session')">
+            <div class="card-header">
+              <span class="badge badge-info">종합</span>
+              <span style="font-size:11.5px;font-weight:600;color:var(--color-warning)">● 검토 필요</span>
+            </div>
+            <div class="card-title">상반기 온보딩 개선안 핵심 주장 압축</div>
+            <div class="card-meta-row">
+              <span class="meta">메시지 22개 · 자료 6개</span>
+              <span class="meta">04-17 16:48</span>
+            </div>
+          </div>
+          <div class="session-card" onclick="navigate('session')">
+            <div class="card-header">
+              <span class="badge badge-success">작성</span>
+              <span style="font-size:11.5px;font-weight:600;color:var(--color-success)">● 완료</span>
+            </div>
+            <div class="card-title">채용 공고 초안 작성 — 데이터 엔지니어 JD</div>
+            <div class="card-meta-row">
+              <span class="meta">메시지 11개 · 자료 3개</span>
+              <span class="meta">04-16 09:20</span>
+            </div>
+            <span class="meta" style="font-size:10px">이전 세션에서 이어짐</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NEW SESSION SCREEN -->
+    <div class="screen" id="screen-new">
+      <div class="topbar">
+        <div>
+          <div class="topbar-title">새 작업</div>
+          <div class="topbar-meta">세션 모드와 의도를 설정하세요</div>
+        </div>
+        <div class="topbar-actions">
+          <button class="btn-secondary" onclick="navigate('workbench')">취소</button>
+        </div>
+      </div>
+      <div class="content">
+        <div class="form-card">
+          <div style="margin-bottom:22px">
+            <div class="section-label" style="margin-bottom:6px">세션 설정</div>
+            <h2 style="font-size:22px;font-weight:700;color:var(--color-text);letter-spacing:-0.02em">새 작업 세션 시작</h2>
+            <p style="font-size:13px;color:var(--color-text-secondary);margin-top:4px;line-height:1.6">업무 의도와 맥락을 입력하면 HR AX Worktable이 이전 세션의 흐름을 이어갑니다.</p>
+          </div>
+          <div class="form-group">
+            <label class="form-label">세션 제목</label>
+            <input class="form-input" placeholder="예: 채용 공고 JD 작성 — 시니어 PM" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">작업 의도 / 맥락</label>
+            <textarea class="form-input" placeholder="이 작업에서 무엇을 하려고 하는지, 어떤 제약이나 방향이 있는지 간략히 입력하세요."></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Copilot 모드 선택</label>
+            <div class="mode-grid">
+              <div class="mode-option selected" onclick="selectMode(this, '')">
+                <span class="badge badge-teal">발산</span>
+                <div class="mode-title">발산 — 가능성 탐색</div>
+                <div class="mode-desc">주제와 방향을 열어 두고 재료를 넓게 모읍니다.</div>
+              </div>
+              <div class="mode-option validate" onclick="selectMode(this, 'validate')">
+                <span class="badge badge-warning">검증</span>
+                <div class="mode-title">검증 — 반론·리스크 드러내기</div>
+                <div class="mode-desc">페르소나와 리스크 관점으로 허점을 꺼냅니다.</div>
+              </div>
+              <div class="mode-option synthesize" onclick="selectMode(this, 'synthesize')">
+                <span class="badge badge-info">종합</span>
+                <div class="mode-title">종합 — 주장 압축</div>
+                <div class="mode-desc">흩어진 근거를 의사결정 가능한 주장으로 만듭니다.</div>
+              </div>
+              <div class="mode-option write" onclick="selectMode(this, 'write')">
+                <span class="badge badge-success">작성</span>
+                <div class="mode-title">작성 — 결과물 생성</div>
+                <div class="mode-desc">정리된 재료를 보고서·문서로 마감합니다.</div>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:4px">
+            <button class="btn-teal" onclick="navigate('session')" style="padding:10px 24px;font-size:14px">세션 시작 →</button>
+            <button class="btn-secondary" onclick="navigate('workbench')">취소</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SESSION CANVAS SCREEN -->
+    <div class="screen" id="screen-session" style="overflow:hidden">
+      <div class="topbar">
+        <div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div class="topbar-title">신규 채용 프로세스 재설계</div>
+            <span class="badge badge-teal">발산</span>
+          </div>
+          <div class="topbar-meta">메시지 8개 · 자료 2개 · 04-19 14:32</div>
+        </div>
+        <div class="topbar-actions">
+          <button class="btn-secondary" onclick="navigate('workbench')">← 워크벤치</button>
+          <button class="btn-primary">초안 생성</button>
+        </div>
+      </div>
+      <div class="canvas-layout">
+        <div class="chat-area">
+          <div class="chat-messages">
+            <div class="msg">
+              <div class="msg-ai">
+                <div class="msg-ai-header">
+                  <div class="ai-icon"><svg viewBox="0 0 12 12"><circle cx="6" cy="6" r="5"/></svg></div>
+                  <span class="meta">HR AX Worktable · 발산 모드</span>
+                </div>
+                안녕하세요! 신규 채용 프로세스 재설계 작업을 시작하겠습니다.<br><br>
+                현재 어떤 단계에서 가장 큰 병목이 있는지 먼저 넓게 탐색해볼게요. 지원자 경험, 내부 검토 프로세스, 의사결정 기준 중 어느 부분부터 살펴볼까요?
+              </div>
+            </div>
+            <div class="msg" style="align-self:flex-end">
+              <div class="msg-user">
+                서류 심사 단계에서 탈락 기준이 명확하지 않아서 팀마다 다르게 판단하고 있어요. 일관성 있는 기준을 만들고 싶습니다.
+              </div>
+            </div>
+            <div class="msg">
+              <div class="msg-ai">
+                <div class="msg-ai-header">
+                  <div class="ai-icon"><svg viewBox="0 0 12 12"><circle cx="6" cy="6" r="5"/></svg></div>
+                  <span class="meta">HR AX Worktable</span>
+                </div>
+                좋습니다. 서류 심사 일관성 문제를 다각도로 탐색해볼게요. 가능한 방향들을 먼저 펼쳐보겠습니다.<br><br>
+                <strong>1. 역할별 최소 자격 요건 프레임</strong> — 직군/레벨별로 서류 통과의 필수 조건을 명시화<br>
+                <strong>2. 스코어카드 방식</strong> — 5–7개 항목에 1–5점 척도, 합산 기준으로 판단<br>
+                <strong>3. 레드플래그 리스트</strong> — 팀이 공통으로 동의한 즉각 탈락 조건 목록화<br><br>
+                세 방향 중 어느 것이 현재 팀 상황에 가장 잘 맞을 것 같나요?
+              </div>
+            </div>
+          </div>
+          <div class="chat-input-area">
+            <textarea class="chat-input" placeholder="메시지를 입력하세요... (Shift+Enter로 줄바꿈)"></textarea>
+            <button class="btn-teal" style="padding:10px 16px;height:44px;flex-shrink:0">전송</button>
+          </div>
+        </div>
+        <div class="context-panel">
+          <div>
+            <div class="panel-section-title">첨부 자료</div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <div class="source-item">
+                <div class="source-name">2023 채용 현황 리포트.pdf</div>
+                <div class="source-meta">PDF · 3.2MB · 04-18 업로드</div>
+              </div>
+              <div class="source-item">
+                <div class="source-name">팀별 서류심사 기준 현황.xlsx</div>
+                <div class="source-meta">XLSX · 128KB · 04-19 업로드</div>
+              </div>
+              <button class="btn-secondary" style="font-size:11px;padding:6px 10px;margin-top:4px">+ 자료 첨부</button>
+            </div>
+          </div>
+          <div>
+            <div class="panel-section-title">이전 세션 연결</div>
+            <div style="background:var(--color-bg-elevated);border:1px solid var(--color-border);border-radius:var(--radius-sm);padding:10px 12px">
+              <div style="font-size:11.5px;font-weight:600;color:var(--color-text)">2023 하반기 채용 회고</div>
+              <div class="meta" style="margin-top:2px">종합 · 완료 · 04-02</div>
+              <div style="font-size:11px;color:var(--color-text-secondary);margin-top:5px;line-height:1.5">핵심 주장: 서류 탈락 기준 불일치가 합격률 편차의 주요 원인</div>
+            </div>
+          </div>
+          <div>
+            <div class="panel-section-title">중간 산출물</div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <div class="source-item" style="border-color:var(--color-teal);background:var(--color-teal-light)">
+                <div class="source-name" style="color:var(--color-teal)">아이디어 3개</div>
+                <div class="source-meta">발산 단계 메모</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CARDS SCREEN -->
+    <div class="screen" id="screen-cards">
+      <div class="topbar">
+        <div>
+          <div class="topbar-title">업무 카드</div>
+          <div class="topbar-meta">3개 활성 업무 카드</div>
+        </div>
+        <div class="topbar-actions">
+          <button class="btn-teal">+ 새 카드</button>
+        </div>
+      </div>
+      <div class="content">
+        <div class="sessions-grid">
+          <div class="session-card">
+            <div class="card-header">
+              <span class="badge badge-neutral" style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.04em">채용</span>
+              <span style="font-size:11.5px;font-weight:600;color:var(--color-success)">● 활성</span>
+            </div>
+            <div class="card-title">2024 상반기 채용 프로세스 개선</div>
+            <div style="font-size:12px;color:var(--color-text-secondary);line-height:1.6">연결된 세션 4개 · 마지막 활동 04-19</div>
+          </div>
+          <div class="session-card">
+            <div class="card-header">
+              <span class="badge badge-neutral" style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.04em">평가</span>
+              <span style="font-size:11.5px;font-weight:600;color:var(--color-warning)">● 검토 필요</span>
+            </div>
+            <div class="card-title">OKR 기반 성과 평가 체계 수립</div>
+            <div style="font-size:12px;color:var(--color-text-secondary);line-height:1.6">연결된 세션 6개 · 마지막 활동 04-18</div>
+          </div>
+          <div class="session-card">
+            <div class="card-header">
+              <span class="badge badge-neutral" style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.04em">온보딩</span>
+              <span style="font-size:11.5px;font-weight:600;color:var(--color-text-tertiary)">○ 기획 중</span>
+            </div>
+            <div class="card-title">신입사원 온보딩 프로그램 재설계</div>
+            <div style="font-size:12px;color:var(--color-text-secondary);line-height:1.6">연결된 세션 2개 · 마지막 활동 04-15</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- KNOWLEDGE SCREEN -->
+    <div class="screen" id="screen-knowledge">
+      <div class="topbar">
+        <div>
+          <div class="topbar-title">지식 라이브러리</div>
+          <div class="topbar-meta">엔티티 · 팩트 · 인사이트 · 메모리 청크</div>
+        </div>
+      </div>
+      <div class="content">
+        <div class="tabs">
+          <button class="tab active">전체</button>
+          <button class="tab">엔티티</button>
+          <button class="tab">팩트</button>
+          <button class="tab">인사이트</button>
+          <button class="tab">메모리 청크</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div class="session-card" style="flex-direction:row;align-items:flex-start;gap:14px">
+            <div style="flex-shrink:0">
+              <span class="badge badge-teal" style="font-size:10px">인사이트</span>
+            </div>
+            <div>
+              <div class="card-title" style="font-size:13px">서류 탈락 기준 불일치가 합격률 편차의 주요 원인</div>
+              <div style="font-size:12px;color:var(--color-text-secondary);margin-top:4px;line-height:1.6">2023 하반기 채용 회고 세션에서 종합 · 출처 자료 2개</div>
+              <div class="meta" style="margin-top:6px">채용 프로세스 개선 카드 · 04-02</div>
+            </div>
+          </div>
+          <div class="session-card" style="flex-direction:row;align-items:flex-start;gap:14px">
+            <div style="flex-shrink:0">
+              <span class="badge badge-info" style="font-size:10px">팩트</span>
+            </div>
+            <div>
+              <div class="card-title" style="font-size:13px">팀별 서류 합격률 편차 최대 42%p (2023 하반기)</div>
+              <div style="font-size:12px;color:var(--color-text-secondary);margin-top:4px;line-height:1.6">2023 채용 현황 리포트.pdf · p.14</div>
+              <div class="meta" style="margin-top:6px">채용 현황 리포트 · 04-18</div>
+            </div>
+          </div>
+          <div class="session-card" style="flex-direction:row;align-items:flex-start;gap:14px">
+            <div style="flex-shrink:0">
+              <span class="badge badge-accent" style="font-size:10px">엔티티</span>
+            </div>
+            <div>
+              <div class="card-title" style="font-size:13px">스코어카드 방식 (서류 심사 일관성 방안)</div>
+              <div style="font-size:12px;color:var(--color-text-secondary);margin-top:4px;line-height:1.6">5–7개 항목 · 1–5점 척도 · 합산 기준 판단</div>
+              <div class="meta" style="margin-top:6px">채용 프로세스 개선 카드 · 04-19</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- WIKI SCREEN -->
+    <div class="screen" id="screen-wiki">
+      <div class="topbar">
+        <div>
+          <div class="topbar-title">공유 위키</div>
+          <div class="topbar-meta">팀원이 먼저 이해해야 할 개념 구조</div>
+        </div>
+      </div>
+      <div class="content">
+        <div class="empty-state">
+          <span class="section-label">공유 위키</span>
+          <h3 style="font-family:var(--font-headline);font-size:20px;font-weight:700;color:var(--color-text);margin-top:8px;letter-spacing:-0.02em">제품 설명보다 먼저, 개념 구조를 위키로 남깁니다</h3>
+          <p style="font-size:13px;color:var(--color-text-secondary);margin-top:8px;line-height:1.7;max-width:480px;margin-left:auto;margin-right:auto">AI Native 작업공간이 무엇인지, Copilot이 어떤 역할을 하는지, 업무 카드와 프로세스가 어떻게 연결되는지 쉬운 말로 정리됩니다.</p>
+          <button class="btn-teal" style="margin-top:16px;position:relative;z-index:1">위키 열기</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const screens = ['workbench','new','session','cards','knowledge','wiki','review'];
+const navMap = { workbench:'nav-workbench', new:'nav-new', session:'nav-workbench', cards:'nav-cards', knowledge:'nav-knowledge', wiki:'nav-wiki', review:'nav-review' };
+
+function navigate(name) {
+  screens.forEach(s => {
+    const el = document.getElementById('screen-' + s);
+    if (el) el.classList.toggle('active', s === name);
+  });
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  const navId = navMap[name];
+  if (navId) document.getElementById(navId)?.classList.add('active');
+  localStorage.setItem('axiom_screen', name);
+}
+
+function selectMode(el, type) {
+  document.querySelectorAll('.mode-option').forEach(m => {
+    m.classList.remove('selected');
+  });
+  el.classList.add('selected');
+}
+
+// Restore last screen
+const saved = localStorage.getItem('axiom_screen') || 'workbench';
+navigate(saved);
+</script>
+</body>
+</html>

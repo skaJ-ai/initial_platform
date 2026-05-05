@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@600;800&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Manrope', sans-serif; background: #fcfcfc; padding: 20px; }
+  .row { display: flex; gap: 10px; }
+  .swatch { flex: 1; border-radius: 10px; height: 72px; display: flex; flex-direction: column; justify-content: flex-end; padding: 8px 10px; }
+  .swatch span { font-size: 10px; font-weight: 600; }
+  .label { font-size: 10px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #0f4c81; margin-bottom: 10px; }
+  .sub { font-size: 9px; font-weight: 600; color: #4a6080; margin-top: 2px; }
+</style>
+</head>
+<body>
+<div class="label">Brand Colors</div>
+<div class="row">
+  <div class="swatch" style="background:#0f4c81">
+    <span style="color:#fff">Core Blue</span>
+    <span class="sub" style="color:rgba(255,255,255,0.7)">#0f4c81</span>
+  </div>
+  <div class="swatch" style="background:#0a3d6b">
+    <span style="color:#fff">Blue Hover</span>
+    <span class="sub" style="color:rgba(255,255,255,0.7)">#0a3d6b</span>
+  </div>
+  <div class="swatch" style="background:#d4e4f7">
+    <span style="color:#0f4c81">Blue Light</span>
+    <span class="sub" style="color:#4a6080">#d4e4f7</span>
+  </div>
+  <div class="swatch" style="background:#00bfa5">
+    <span style="color:#fff">Teal</span>
+    <span class="sub" style="color:rgba(255,255,255,0.8)">#00bfa5</span>
+  </div>
+  <div class="swatch" style="background:#00a892">
+    <span style="color:#fff">Teal Hover</span>
+    <span class="sub" style="color:rgba(255,255,255,0.8)">#00a892</span>
+  </div>
+  <div class="swatch" style="background:#e0faf6">
+    <span style="color:#00bfa5">Teal Light</span>
+    <span class="sub" style="color:#4a6080">#e0faf6</span>
+  </div>
+</div>
+</body>
+</html>

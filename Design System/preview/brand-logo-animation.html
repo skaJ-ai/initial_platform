@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Manrope', sans-serif; background: #f5f5f7; padding: 28px; display: flex; gap: 20px; align-items: flex-start; }
+
+  .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 28px 32px; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+  .card-dark { background: #0d1f33; border-color: #0d1f33; }
+  .card-label { font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #8fa5be; font-family: 'SFMono-Regular', Consolas, monospace; }
+  .card-label-dark { color: rgba(255,255,255,0.3); }
+  .status-text { font-size: 12px; font-weight: 600; color: #4a6080; letter-spacing: 0.02em; }
+  .status-text-dark { color: rgba(255,255,255,0.5); }
+
+  /* The logo grid */
+  .logo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+  .logo-grid.sm { gap: 3px; }
+  .logo-grid.lg { gap: 5px; }
+
+  .sq { border-radius: 4px; background: #0f4c81; }
+  .sq-white { background: white; }
+
+  /* Animation — 4 steps, each square lights up in sequence */
+  /* Continuous clockwise chase — single keyframe, staggered delays */
+  @keyframes chase {
+    0%   { opacity: 1; }
+    25%  { opacity: 0.15; }
+    100% { opacity: 1; }
+  }
+
+  /* TR=2 starts, BR=4 follows, BL=3 next, TL=1 last */
+  .anim .sq:nth-child(2) { animation: chase 1.6s ease-in-out infinite; animation-delay: 0s; }
+  .anim .sq:nth-child(4) { animation: chase 1.6s ease-in-out infinite; animation-delay: -1.2s; }
+  .anim .sq:nth-child(3) { animation: chase 1.6s ease-in-out infinite; animation-delay: -0.8s; }
+  .anim .sq:nth-child(1) { animation: chase 1.6s ease-in-out infinite; animation-delay: -0.4s; }
+
+  /* Sizes */
+  .sz-lg .sq  { width: 18px; height: 18px; border-radius: 5px; }
+  .sz-md .sq  { width: 13px; height: 13px; border-radius: 3.5px; }
+  .sz-sm .sq  { width: 9px;  height: 9px;  border-radius: 2.5px; }
+
+  /* In a real topbar context */
+  .topbar-demo { background: rgba(255,255,255,0.92); border: 1px solid #f0f0f2; border-radius: 12px; padding: 10px 16px; display: flex; align-items: center; gap: 10px; width: 280px; }
+  .topbar-text { display: flex; flex-direction: column; }
+  .topbar-name { font-size: 13px; font-weight: 700; color: #0f4c81; }
+  .topbar-status { font-size: 11px; color: #4a6080; }
+
+  .dots { display: flex; gap: 3px; align-items: center; margin-top: 2px; }
+  .dot { width: 3px; height: 3px; border-radius: 50%; background: #00bfa5; animation: dot-blink 1.4s ease-in-out infinite; }
+  .dot:nth-child(2) { animation-delay: 0.2s; }
+  .dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes dot-blink { 0%, 100% { opacity: 0.2; } 50% { opacity: 1; } }
+
+  .section-row { display: flex; align-items: center; justify-content: center; gap: 32px; flex: 1; }
+</style>
+</head>
+<body>
+
+  <!-- Light bg -->
+  <div class="card">
+    <div class="card-label">Light</div>
+    <div class="logo-grid sz-lg anim">
+      <div class="sq"></div>
+      <div class="sq"></div>
+      <div class="sq"></div>
+      <div class="sq"></div>
+    </div>
+    <div class="status-text">생각하는 중...</div>
+  </div>
+
+  <!-- Dark bg -->
+  <div class="card card-dark">
+    <div class="card-label card-label-dark">Dark</div>
+    <div class="logo-grid sz-lg anim">
+      <div class="sq sq-white"></div>
+      <div class="sq sq-white"></div>
+      <div class="sq sq-white"></div>
+      <div class="sq sq-white"></div>
+    </div>
+    <div class="status-text status-text-dark">생각하는 중...</div>
+  </div>
+
+  <!-- Size variants -->
+  <div class="card" style="gap:20px">
+    <div class="card-label">Sizes</div>
+    <div style="display:flex;gap:20px;align-items:center">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+        <div class="logo-grid sz-lg anim"><div class="sq"></div><div class="sq"></div><div class="sq"></div><div class="sq"></div></div>
+        <span style="font-size:9px;color:#8fa5be;font-family:monospace">LG · 40px</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+        <div class="logo-grid sz-md anim"><div class="sq"></div><div class="sq"></div><div class="sq"></div><div class="sq"></div></div>
+        <span style="font-size:9px;color:#8fa5be;font-family:monospace">MD · 29px</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+        <div class="logo-grid sz-sm anim"><div class="sq"></div><div class="sq"></div><div class="sq"></div><div class="sq"></div></div>
+        <span style="font-size:9px;color:#8fa5be;font-family:monospace">SM · 21px</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- In-context usage -->
+  <div class="card" style="align-items:flex-start;gap:12px">
+    <div class="card-label">In-context</div>
+    <div class="topbar-demo">
+      <div style="width:32px;height:32px;border-radius:8px;background:#0f4c81;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <div class="logo-grid sz-sm anim" style="gap:2px">
+          <div class="sq sq-white"></div>
+          <div class="sq sq-white"></div>
+          <div class="sq sq-white"></div>
+          <div class="sq sq-white"></div>
+        </div>
+      </div>
+      <div class="topbar-text">
+        <div class="topbar-name">HR AX Worktable</div>
+        <div style="display:flex;align-items:center;gap:5px">
+          <span class="topbar-status">응답 생성 중</span>
+          <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="topbar-demo" style="background:#0d1f33;border-color:#0d1f33">
+      <div style="width:32px;height:32px;border-radius:8px;background:rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <div class="logo-grid sz-sm anim" style="gap:2px">
+          <div class="sq sq-white"></div>
+          <div class="sq sq-white"></div>
+          <div class="sq sq-white"></div>
+          <div class="sq sq-white"></div>
+        </div>
+      </div>
+      <div class="topbar-text">
+        <div class="topbar-name" style="color:white">HR AX Worktable</div>
+        <div style="display:flex;align-items:center;gap:5px">
+          <span class="topbar-status" style="color:rgba(255,255,255,0.45)">응답 생성 중</span>
+          <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

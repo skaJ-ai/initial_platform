@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;800&display=swap');
+  @font-face { font-family: 'Pretendard Variable'; src: url('../fonts/PretendardVariable.woff2') format('woff2-variations'); font-weight: 45 920; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Pretendard Variable','Pretendard',sans-serif; background: #fcfcfc; padding: 20px 24px; }
+  .label { font-size: 10px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #0f4c81; font-family: 'Manrope',sans-serif; margin-bottom: 12px; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 9999px; font-size: 12px; font-weight: 500; line-height: 1.4; }
+  .badge-accent { background: #d4e4f7; color: #0f4c81; }
+  .badge-teal   { background: #e0faf6; color: #00bfa5; }
+  .badge-success{ background: #e6f6ec; color: #1b873f; }
+  .badge-warning{ background: #fff4d4; color: #d08700; }
+  .badge-error  { background: #ffebe9; color: #cf222e; }
+  .badge-info   { background: #ddf4ff; color: #0969da; }
+  .badge-neutral{ background: #f5f5f7; color: #4a6080; border: 1px solid #e5e7eb; }
+  .badge-diverge   { background: #e0faf6; color: #00bfa5; }
+  .badge-validate  { background: #fff4d4; color: #d08700; }
+  .badge-synthesize{ background: #ddf4ff; color: #0969da; }
+  .badge-write     { background: #e6f6ec; color: #1b873f; }
+</style>
+</head>
+<body>
+<div class="label">Status Badges</div>
+<div class="row">
+  <span class="badge badge-accent">랩 멤버 가치</span>
+  <span class="badge badge-teal">조직 기억 축적</span>
+  <span class="badge badge-success">완료</span>
+  <span class="badge badge-warning">검토 필요</span>
+  <span class="badge badge-error">오류</span>
+  <span class="badge badge-info">정보</span>
+  <span class="badge badge-neutral">세션 → 지식 → 다음 세션</span>
+</div>
+<div class="label">Mode Badges</div>
+<div class="row">
+  <span class="badge badge-diverge">발산</span>
+  <span class="badge badge-validate">검증</span>
+  <span class="badge badge-synthesize">종합</span>
+  <span class="badge badge-write">작성</span>
+</div>
+</body>
+</html>

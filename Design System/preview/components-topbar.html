@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&display=swap');
+  @font-face { font-family: 'Pretendard Variable'; src: url('../fonts/PretendardVariable.woff2') format('woff2-variations'); font-weight: 45 920; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Pretendard Variable','Pretendard',sans-serif; background: #f5f5f7; padding: 0; }
+  .topbar { background: rgba(255,255,255,0.92); backdrop-filter: blur(12px); border-bottom: 1px solid #f0f0f2; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; }
+  .left { display: flex; align-items: center; gap: 12px; }
+  .logo-icon { width: 32px; height: 32px; background: #0f4c81; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 11px; font-weight: 700; font-family: 'SFMono-Regular',monospace; }
+  .logo-name { font-family: 'Manrope',sans-serif; font-size: 16px; font-weight: 700; color: #0f4c81; letter-spacing: -0.02em; }
+  .logo-sub { font-size: 10px; color: #4a6080; letter-spacing: 0.1em; font-weight: 600; }
+  .nav { display: flex; align-items: center; gap: 24px; }
+  .nav a { font-size: 13px; font-weight: 600; color: #4a6080; text-decoration: none; }
+  .nav a:hover { color: #0f4c81; }
+  .actions { display: flex; align-items: center; gap: 10px; }
+  .btn-login { font-size: 13px; font-weight: 500; color: #4a6080; background: none; border: none; cursor: pointer; }
+  .btn-teal { padding: 8px 18px; background: #00bfa5; color: #fff; border: none; border-radius: 12px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .note { padding: 12px 24px; font-size: 11px; color: #8fa5be; font-style: italic; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="left">
+    <div class="logo-icon"><svg width="18" height="18" viewBox="0 0 26 26" fill="none"><rect x="3" y="3" width="9" height="9" rx="2" fill="white" opacity="0.9"/><rect x="14" y="3" width="9" height="9" rx="2" fill="white" opacity="0.55"/><rect x="3" y="14" width="9" height="9" rx="2" fill="white" opacity="0.55"/><rect x="14" y="14" width="9" height="9" rx="2" fill="white" opacity="0.25"/></svg></div>
+    <div>
+      <div class="logo-name">HR AX Worktable</div>
+      <div class="logo-sub">AI Native 작업공간</div>
+    </div>
+  </div>
+  <nav class="nav">
+    <a href="#">가치 제안</a>
+    <a href="#">4모드 이야기</a>
+    <a href="#">차별점</a>
+    <a href="#">공유 위키</a>
+  </nav>
+  <div class="actions">
+    <button class="btn-login">로그인</button>
+    <button class="btn-teal">베타 시작</button>
+  </div>
+</div>
+<div class="note">topbar · sticky · backdrop-filter: blur(12px) · bg rgba(255,255,255,0.8)</div>
+</body>
+</html>

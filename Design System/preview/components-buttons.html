@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap');
+  @font-face { font-family: 'Pretendard Variable'; src: url('../fonts/PretendardVariable.woff2') format('woff2-variations'); font-weight: 45 920; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Pretendard Variable','Pretendard',sans-serif; background: #fcfcfc; padding: 20px 24px; }
+  .label { font-size: 10px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #0f4c81; font-family: 'Manrope',sans-serif; margin-bottom: 14px; }
+  .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .btn-primary {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 10px 20px; background: linear-gradient(135deg, #00355f 0%, #0f4c81 100%);
+    color: #fff; border: none; border-radius: 12px; font-size: 14px; font-weight: 600;
+    cursor: pointer; box-shadow: 0 2px 4px rgba(15,76,129,0.12); font-family: inherit;
+  }
+  .btn-teal {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 10px 20px; background: #00bfa5; color: #fff; border: none; border-radius: 12px;
+    font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit;
+  }
+  .btn-secondary {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 10px 20px; background: transparent; color: #4a6080;
+    border: 1px solid #e5e7eb; border-radius: 12px; font-size: 14px; font-weight: 500;
+    cursor: pointer; font-family: inherit;
+  }
+  .btn-primary-sm { padding: 7px 14px; font-size: 12px; }
+  .btn-teal-sm { padding: 7px 14px; font-size: 12px; }
+  .btn-secondary-sm { padding: 7px 14px; font-size: 12px; }
+  .btn-disabled { opacity: 0.4; cursor: not-allowed; }
+  .sep { width: 1px; height: 32px; background: #e5e7eb; margin: 0 4px; }
+</style>
+</head>
+<body>
+<div class="label">Buttons</div>
+<div class="row">
+  <button class="btn-primary">작업공간 열기 →</button>
+  <button class="btn-teal">베타 시작</button>
+  <button class="btn-secondary">공유 위키 보기</button>
+  <div class="sep"></div>
+  <button class="btn-primary btn-primary-sm">새 작업</button>
+  <button class="btn-teal btn-teal-sm">로그인</button>
+  <button class="btn-secondary btn-secondary-sm">취소</button>
+  <div class="sep"></div>
+  <button class="btn-primary btn-disabled" disabled>비활성화</button>
+  <button class="btn-teal btn-disabled" disabled>비활성화</button>
+</div>
+</body>
+</html>

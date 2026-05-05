@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@600;800&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Manrope', sans-serif; background: #fcfcfc; padding: 20px; }
+  .row { display: flex; gap: 10px; margin-bottom: 10px; }
+  .swatch { flex: 1; border-radius: 10px; height: 56px; display: flex; flex-direction: column; justify-content: flex-end; padding: 7px 9px; border: 1px solid #e5e7eb; }
+  .swatch span { font-size: 10px; font-weight: 600; }
+  .label { font-size: 10px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #0f4c81; margin-bottom: 10px; }
+  .sub { font-size: 9px; color: #8fa5be; margin-top: 1px; }
+</style>
+</head>
+<body>
+<div class="label">Backgrounds &amp; Borders</div>
+<div class="row">
+  <div class="swatch" style="background:#fcfcfc"><span style="color:#0d1f33">bg</span><span class="sub">#fcfcfc</span></div>
+  <div class="swatch" style="background:#ffffff"><span style="color:#0d1f33">elevated</span><span class="sub">#ffffff</span></div>
+  <div class="swatch" style="background:#f5f5f7"><span style="color:#0d1f33">sunken</span><span class="sub">#f5f5f7</span></div>
+  <div class="swatch" style="background:#e5e7eb"><span style="color:#0d1f33">border</span><span class="sub">#e5e7eb</span></div>
+  <div class="swatch" style="background:#f0f0f2"><span style="color:#0d1f33">subtle</span><span class="sub">#f0f0f2</span></div>
+  <div class="swatch" style="background:#d1d5db"><span style="color:#0d1f33">strong</span><span class="sub">#d1d5db</span></div>
+</div>
+<div class="row">
+  <div class="swatch" style="background:#0d1f33; border-color:#0d1f33"><span style="color:#fff">text</span><span class="sub" style="color:rgba(255,255,255,0.6)">#0d1f33</span></div>
+  <div class="swatch" style="background:#4a6080; border-color:#4a6080"><span style="color:#fff">secondary</span><span class="sub" style="color:rgba(255,255,255,0.6)">#4a6080</span></div>
+  <div class="swatch" style="background:#8fa5be; border-color:#8fa5be"><span style="color:#fff">tertiary</span><span class="sub" style="color:rgba(255,255,255,0.8)">#8fa5be</span></div>
+  <div class="swatch" style="background:#0a0a0a; border-color:#0a0a0a"><span style="color:#f0f0f0">dark bg</span><span class="sub" style="color:#64748b">#0a0a0a</span></div>
+  <div class="swatch" style="background:#141414; border-color:#141414"><span style="color:#f0f0f0">dark elevated</span><span class="sub" style="color:#64748b">#141414</span></div>
+  <div class="swatch" style="background:#2a2a2a; border-color:#2a2a2a"><span style="color:#94a3b8">dark border</span><span class="sub" style="color:#64748b">#2a2a2a</span></div>
+</div>
+</body>
+</html>

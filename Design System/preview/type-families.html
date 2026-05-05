@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&display=swap');
+  @font-face { font-family: 'Pretendard Variable'; src: url('../fonts/PretendardVariable.woff2') format('woff2-variations'); font-weight: 45 920; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #fcfcfc; padding: 20px 24px; font-family: 'Pretendard Variable','Pretendard',sans-serif; }
+  .row { display: flex; gap: 12px; align-items: stretch; }
+  .col { border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px 20px; background: #fff; }
+  .col-main { flex: 1; }
+  .col-micro { flex: 0 0 auto; width: 220px; background: #f5f5f7; border-color: #f0f0f2; }
+  .tag { font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #8fa5be; font-family: 'SFMono-Regular', Consolas, monospace; margin-bottom: 8px; }
+  .big { font-size: 22px; font-weight: 700; line-height: 1.2; color: #0d1f33; }
+  .sub { font-size: 11px; color: #4a6080; margin-top: 6px; line-height: 1.5; }
+  .divider { width: 1px; background: #e5e7eb; flex-shrink: 0; }
+  .micro-label { font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #8fa5be; font-family: 'SFMono-Regular', Consolas, monospace; margin-bottom: 10px; }
+  .micro-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .pill { background: #f5f5f7; border-radius: 9999px; padding: 2px 8px; font-family: 'SFMono-Regular',Consolas,monospace; font-size: 9px; font-weight: 700; color: #8fa5be; }
+  .pill-active { background: rgba(15,76,129,0.1); color: #0f4c81; }
+  .meta-ex { font-family: 'SFMono-Regular',Consolas,monospace; font-size: 11px; color: #8fa5be; }
+  .use-note { font-size: 10px; color: #8fa5be; margin-top: 10px; line-height: 1.5; border-top: 1px solid #e5e7eb; padding-top: 8px; }
+</style>
+</head>
+<body>
+<div class="row">
+  <div class="col col-main">
+    <div class="tag">Headline — Manrope</div>
+    <div class="big" style="font-family:'Manrope',sans-serif">HR AX Copilot<br>생각이 흩어지지 않게</div>
+    <div class="sub" style="font-family:'Manrope',sans-serif">Weight 400–800 · 모든 제목, section-label, 로고</div>
+  </div>
+  <div class="divider"></div>
+  <div class="col col-main">
+    <div class="tag">Body — Pretendard Variable</div>
+    <div class="big" style="font-family:'Pretendard Variable','Pretendard',sans-serif;font-weight:500">업무 카드와 프로세스 자산<br>HR 담당자 전용 Copilot</div>
+    <div class="sub" style="font-family:'Pretendard Variable',sans-serif">Weight 45–920 variable · 한국어 최적화 · 모든 본문</div>
+  </div>
+  <div class="divider"></div>
+  <div class="col col-micro">
+    <div class="micro-label">Mono — 마이크로 유틸리티만</div>
+    <div class="micro-row">
+      <span class="pill pill-active">WB</span>
+      <span class="pill">NW</span>
+      <span class="pill">KB</span>
+      <span style="font-size:10px;color:#4a6080">사이드바 shortcode</span>
+    </div>
+    <div class="micro-row">
+      <span class="meta-ex">04-19 14:32</span>
+      <span style="font-size:10px;color:#4a6080">timestamp</span>
+    </div>
+    <div class="micro-row">
+      <span class="meta-ex">메시지 8개 · 자료 2개</span>
+    </div>
+    <div class="use-note">SFMono / Consolas · 9–11px<br>tertiary 색상 · 절대적으로 좁은 용도</div>
+  </div>
+</div>
+</body>
+</html>

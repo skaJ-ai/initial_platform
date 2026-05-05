@@ -1,0 +1,267 @@
+/* ═══════════════════════════════════════════════════════════════
+   HR AX Design System — colors_and_type.css
+   "Trust within Flow"
+   Source: skaJ-ai/AXIOM @ src/app/globals.css + tailwind.config.ts
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── FONTS ── */
+@font-face {
+  font-family: 'Pretendard Variable';
+  src: url('./fonts/PretendardVariable.woff2') format('woff2-variations');
+  font-weight: 45 920;
+  font-style: normal;
+  font-display: swap;
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+
+/* ── BASE FONT VARS ── */
+:root {
+  --font-headline: 'Manrope', 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-sans: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'SFMono-Regular', 'Consolas', 'Liberation Mono', 'Menlo', monospace;
+
+  /* ── COLOR TOKENS — LIGHT ── */
+
+  /* Backgrounds */
+  --color-bg:          #fcfcfc;
+  --color-bg-elevated: #ffffff;
+  --color-bg-sunken:   #f5f5f7;
+  --color-bg-overlay:  rgba(0, 0, 0, 0.04);
+
+  /* Borders */
+  --color-border:        #e5e7eb;
+  --color-border-subtle: #f0f0f2;
+  --color-border-strong: #d1d5db;
+
+  /* Text */
+  --color-text:           #0d1f33;
+  --color-text-secondary: #4a6080;
+  --color-text-tertiary:  #8fa5be;
+  --color-text-inverse:   #ffffff;
+
+  /* Brand — Core Blue (Trust) */
+  --color-accent:       #0f4c81;
+  --color-accent-light: #d4e4f7;
+  --color-accent-hover: #0a3d6b;
+
+  /* Brand — Teal (Insight / Flow) */
+  --color-teal:       #00bfa5;
+  --color-teal-light: #e0faf6;
+  --color-teal-hover: #00a892;
+
+  /* Semantic */
+  --color-success:       #1b873f;
+  --color-success-light: #e6f6ec;
+  --color-warning:       #d08700;
+  --color-warning-light: #fff4d4;
+  --color-error:         #cf222e;
+  --color-error-light:   #ffebe9;
+  --color-info:          #0969da;
+  --color-info-light:    #ddf4ff;
+
+  /* 4-Mode Colors */
+  --color-mode-diverge:          #00bfa5;  /* Teal */
+  --color-mode-diverge-light:    #e0faf6;
+  --color-mode-validate:         #d08700;  /* Amber */
+  --color-mode-validate-light:   #fff4d4;
+  --color-mode-synthesize:       #0969da;  /* Blue */
+  --color-mode-synthesize-light: #ddf4ff;
+  --color-mode-write:            #1b873f;  /* Green */
+  --color-mode-write-light:      #e6f6ec;
+
+  /* ── SPACING — 4px base ── */
+  --space-1:  0.25rem;  /* 4px */
+  --space-2:  0.5rem;   /* 8px */
+  --space-3:  0.75rem;  /* 12px */
+  --space-4:  1rem;     /* 16px */
+  --space-5:  1.25rem;  /* 20px */
+  --space-6:  1.5rem;   /* 24px */
+  --space-8:  2rem;     /* 32px */
+  --space-10: 2.5rem;   /* 40px */
+  --space-12: 3rem;     /* 48px */
+  --space-16: 4rem;     /* 64px */
+
+  /* ── BORDER RADIUS — R12 standard ── */
+  --radius-sm:   8px;
+  --radius-md:   12px;
+  --radius-lg:   20px;
+  --radius-full: 9999px;
+
+  /* ── SHADOWS — brand-tinted blue ── */
+  --shadow-1: 0 2px 6px  rgba(15, 76, 129, 0.06);
+  --shadow-2: 0 4px 14px rgba(15, 76, 129, 0.09);
+  --shadow-3: 0 8px 28px rgba(15, 76, 129, 0.12);
+  --shadow-4: 0 16px 44px rgba(15, 76, 129, 0.14);
+  --shadow-5: 0 24px 64px rgba(15, 76, 129, 0.16);
+
+  /* ── TRANSITIONS ── */
+  --duration-fast:   120ms;
+  --duration-normal: 200ms;
+  --duration-slow:   300ms;
+  --ease-out: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* ── DARK MODE ── */
+.dark {
+  --color-bg:          #0a0a0a;
+  --color-bg-elevated: #141414;
+  --color-bg-sunken:   #0e0e0e;
+  --color-bg-overlay:  rgba(255, 255, 255, 0.04);
+
+  --color-border:        #2a2a2a;
+  --color-border-subtle: #1e1e1e;
+  --color-border-strong: #3a3a3a;
+
+  --color-text:           #f0f0f0;
+  --color-text-secondary: #94a3b8;
+  --color-text-tertiary:  #64748b;
+  --color-text-inverse:   #0d1f33;
+
+  --color-accent:       #7ba7c9;
+  --color-accent-light: rgba(15, 76, 129, 0.15);
+  --color-accent-hover: #9bbdd6;
+
+  --color-teal:       #4dd8c0;
+  --color-teal-light: rgba(0, 191, 165, 0.12);
+  --color-teal-hover: #6ee4d0;
+
+  --color-success:       #3fb950;
+  --color-success-light: rgba(63, 185, 80, 0.12);
+  --color-warning:       #d29922;
+  --color-warning-light: rgba(210, 153, 34, 0.12);
+  --color-error:         #f85149;
+  --color-error-light:   rgba(248, 81, 73, 0.12);
+  --color-info:          #58a6ff;
+  --color-info-light:    rgba(88, 166, 255, 0.12);
+
+  --shadow-1: 0 2px 6px  rgba(0, 0, 0, 0.30);
+  --shadow-2: 0 4px 14px rgba(0, 0, 0, 0.35);
+  --shadow-3: 0 8px 28px rgba(0, 0, 0, 0.40);
+  --shadow-4: 0 16px 44px rgba(0, 0, 0, 0.45);
+  --shadow-5: 0 24px 64px rgba(0, 0, 0, 0.50);
+}
+
+/* ── SEMANTIC TYPE VARS ── */
+:root {
+  /* Display heading — hero */
+  --text-display-size:    clamp(3.5rem, 7vw, 6.8rem);
+  --text-display-weight:  800;
+  --text-display-leading: 0.92;
+  --text-display-tracking: -0.055em;
+
+  /* H1 */
+  --text-h1-size:    2.5rem;
+  --text-h1-weight:  700;
+  --text-h1-leading: 1.1;
+  --text-h1-tracking: -0.03em;
+
+  /* H2 */
+  --text-h2-size:    1.875rem;
+  --text-h2-weight:  700;
+  --text-h2-leading: 1.15;
+  --text-h2-tracking: -0.025em;
+
+  /* H3 */
+  --text-h3-size:    1.375rem;
+  --text-h3-weight:  700;
+  --text-h3-leading: 1.25;
+  --text-h3-tracking: -0.02em;
+
+  /* H4 */
+  --text-h4-size:    1.125rem;
+  --text-h4-weight:  700;
+  --text-h4-leading: 1.3;
+  --text-h4-tracking: -0.015em;
+
+  /* Body large */
+  --text-body-lg-size:    1.125rem;
+  --text-body-lg-leading: 1.8;
+
+  /* Body default */
+  --text-body-size:    0.9375rem;
+  --text-body-leading: 1.8;
+
+  /* Body small */
+  --text-body-sm-size:    0.875rem;
+  --text-body-sm-leading: 1.7;
+
+  /* Caption / meta (monospace) */
+  --text-meta-size:    0.75rem;
+  --text-meta-leading: 1.4;
+  --text-meta-tracking: 0.02em;
+
+  /* Section label */
+  --text-label-size:    0.75rem;
+  --text-label-weight:  800;
+  --text-label-tracking: 0.14em;
+}
+
+/* ── BASE RESETS ── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  scrollbar-color: var(--color-text-tertiary) transparent;
+  scrollbar-width: thin;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  line-height: 1.65;
+  letter-spacing: -0.01em;
+}
+
+/* ── SEMANTIC ELEMENT STYLES ── */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-headline);
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.025em;
+  color: var(--color-text);
+}
+
+h1 { font-size: var(--text-h1-size); letter-spacing: var(--text-h1-tracking); }
+h2 { font-size: var(--text-h2-size); letter-spacing: var(--text-h2-tracking); }
+h3 { font-size: var(--text-h3-size); letter-spacing: var(--text-h3-tracking); }
+h4 { font-size: var(--text-h4-size); letter-spacing: var(--text-h4-tracking); }
+
+p  { font-size: var(--text-body-size); line-height: var(--text-body-leading); color: var(--color-text-secondary); }
+
+code, pre, kbd {
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+}
+
+/* ── UTILITY CLASSES ── */
+
+/* Section label eyebrow */
+.section-label {
+  font-family: var(--font-headline);
+  font-size: var(--text-label-size);
+  font-weight: var(--text-label-weight);
+  letter-spacing: var(--text-label-tracking);
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+/* Mono meta */
+.meta {
+  font-family: var(--font-mono);
+  font-size: var(--text-meta-size);
+  color: var(--color-text-tertiary);
+  letter-spacing: var(--text-meta-tracking);
+}
+
+/* Display heading class */
+.text-display {
+  font-family: var(--font-headline);
+  font-size: var(--text-display-size);
+  font-weight: var(--text-display-weight);
+  line-height: var(--text-display-leading);
+  letter-spacing: var(--text-display-tracking);
+}

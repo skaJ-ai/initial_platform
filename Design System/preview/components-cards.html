@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&display=swap');
+  @font-face { font-family: 'Pretendard Variable'; src: url('../fonts/PretendardVariable.woff2') format('woff2-variations'); font-weight: 45 920; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Pretendard Variable','Pretendard',sans-serif; background: #f5f5f7; padding: 20px 24px; }
+  .label { font-size: 10px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #0f4c81; font-family: 'Manrope',sans-serif; margin-bottom: 12px; }
+  .row { display: flex; gap: 12px; }
+  /* workspace-card */
+  .workspace-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 20px; flex: 1; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 2px 6px rgba(15,76,129,0.06); }
+  .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 9999px; font-size: 11px; font-weight: 500; }
+  .badge-accent { background: #d4e4f7; color: #0f4c81; }
+  .badge-teal { background: #e0faf6; color: #00bfa5; }
+  .badge-neutral { background: #f5f5f7; color: #4a6080; border: 1px solid #e5e7eb; }
+  .card-title { font-family: 'Manrope',sans-serif; font-size: 16px; font-weight: 700; letter-spacing: -0.02em; color: #0d1f33; line-height: 1.2; }
+  .card-body { font-size: 13px; line-height: 1.7; color: #4a6080; }
+  .card-meta { font-family: 'SFMono-Regular',Consolas,monospace; font-size: 11px; color: #8fa5be; display: flex; justify-content: space-between; align-items: center; }
+  /* session card variant */
+  .session-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 16px; flex: 1; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 2px 6px rgba(15,76,129,0.06); }
+</style>
+</head>
+<body>
+<div class="label">Cards</div>
+<div class="row">
+  <div class="workspace-card">
+    <span class="badge badge-accent" style="width:fit-content">랩 멤버 가치</span>
+    <div class="card-title">업무 카드가 프로세스 맥락을 이어받습니다</div>
+    <div class="card-body">업무 카드는 프로세스 자산과 근거 자료를 상속받아, 새 요청이 와도 이전 맥락 위에서 시작합니다.</div>
+  </div>
+  <div class="session-card">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <span class="badge badge-teal">발산</span>
+      <span class="badge badge-neutral">진행 중</span>
+    </div>
+    <div class="card-title">신규 채용 프로세스 재설계</div>
+    <div class="card-meta">
+      <span>메시지 12개 · 자료 3개</span>
+      <span>2024-04-20 14:32</span>
+    </div>
+  </div>
+  <div class="workspace-card" style="background:#f8f9fa;box-shadow:none">
+    <div class="card-title" style="font-size:13px;color:#4a6080">워크스페이스 카드 (Muted)</div>
+    <div class="card-body" style="font-size:12px">배경이 muted된 카드 변형 — 덜 강조되는 보조 정보.</div>
+    <div class="card-meta"><span>workspace-card-muted</span></div>
+  </div>
+</div>
+</body>
+</html>
