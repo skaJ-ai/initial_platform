@@ -1,0 +1,13 @@
+.git
+.gitignore
+.env
+.env.*
+node_modules
+__pycache__
+*.pyc
+*.log
+*.tmp
+private
+internal
+NVIDIA Corporation
+final/mvp-demo/BUILD_SPEC.md

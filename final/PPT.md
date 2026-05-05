@@ -49,7 +49,7 @@
 - AI 동작성 검증, AX 체질화가 용이한 과제 우선추진
 
 **Phase 3 — 예정 — '26년 하반기** "HR AX 플랫폼 구축"
-- HR 데이터의 특성을 고려하여 독립된 형태의 플랫폼 구축
+- HR 특성을 고려한 Data Governance + Harness Engineering 기반의 독립 플랫폼 구축
 
 **Phase 4 — 예정 — '27년** "AI Native 표준업무 프로세스 전면 도입"
 - Digital Worker가 우선적으로 처리하는 업무 프로세스 적용

@@ -1,0 +1,36 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        HTTP_PROXY: ${HTTP_PROXY:-http://168.219.61.252:8080}
+        HTTPS_PROXY: ${HTTPS_PROXY:-http://168.219.61.252:8080}
+        NO_PROXY: ${NO_PROXY:-localhost,127.0.0.1,host.docker.internal,10.240.248.157}
+    image: hr-ax-platform-wiki:latest
+    ports:
+      - "0.0.0.0:26000:26000"
+    volumes:
+      # Wiki edits are persisted back to the host final/ directory.
+      - ./final:/app/final
+    environment:
+      PORT: "26000"
+      LLM_BASE_URL: "http://10.240.248.157:8533/v1"
+      LLM_MODEL: "Qwen3-Next"
+      USE_MOCK: "auto"
+      LLM_API_KEY: ""
+      LLM_API_KEY_HEADER: "Authorization"
+      http_proxy: "http://168.219.61.252:8080"
+      https_proxy: "http://168.219.61.252:8080"
+      HTTP_PROXY: "http://168.219.61.252:8080"
+      HTTPS_PROXY: "http://168.219.61.252:8080"
+      no_proxy: "localhost,127.0.0.1,host.docker.internal,10.240.248.157"
+      NO_PROXY: "localhost,127.0.0.1,host.docker.internal,10.240.248.157"
+      ALLOWED_ORIGINS: "http://localhost:26000,http://127.0.0.1:26000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import os,sys,urllib.request; port=os.getenv('PORT','26000'); url=f'http://127.0.0.1:{port}/api/health'; sys.exit(0 if urllib.request.urlopen(url, timeout=3).getcode()==200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped

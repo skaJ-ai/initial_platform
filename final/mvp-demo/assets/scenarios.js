@@ -12,7 +12,7 @@
 
 // ── 권한 단위 (현재 사용자 기본값) ──
 const CURRENT_USER = {
-  name: "장수하 프로",
+  name: "김삼성 프로",
   role: "L1 부문 People팀",
   permissionUnit: "부문 People팀 × 채용",
   workspace: "채용 Work-space"

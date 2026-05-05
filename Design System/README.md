@@ -48,7 +48,7 @@
 - Short label: `HR AX 플랫폼` / `공통 Copilot 레이어`
 - Sidebar badge: `HX` (monospace, accent blue background)
 
-**Headlines**: Bold, tight tracking (`-0.055em`), often broken mid-sentence with `<span>` color accent for teal highlight. Large fluid type (`clamp(3.5rem, 7vw, 6.8rem)`).
+**Headlines**: Bold, zero tracking for Korean readability, often broken mid-sentence with `<span>` color accent for teal highlight. Large fluid type (`clamp(3.5rem, 7vw, 6.8rem)`).
 
 **Section labels**: ALL CAPS, tiny, wide tracking (`0.14em`), Manrope 800, accent blue color. Used as eyebrow text above headings.
 
@@ -83,8 +83,8 @@
 - **Mono**: SFMono-Regular / Consolas / Liberation Mono — used for meta labels, code, process badges.
 
 **Type scale**:
-- Display: `clamp(3.5rem, 7vw, 6.8rem)`, weight 800, tracking `-0.055em`, line-height 0.92
-- H2: `3rem / 2.5rem`, weight 700, tracking `-0.025em`
+- Display: `clamp(3.5rem, 7vw, 6.8rem)`, weight 800, tracking `0`, line-height 0.92
+- H2: `3rem / 2.5rem`, weight 700, tracking `0`
 - Body: `0.9375rem`, line-height 1.8
 - Small/meta: `0.75rem`, mono
 - Section label: `0.75rem`, uppercase, tracking `0.14em`, weight 800

@@ -269,7 +269,7 @@ function openCard(cardId) {
       <h3>대화</h3>
       <div class="endpoint-status ${window.HRAX_LLM.isConfigured() ? 'connected' : ''}" id="endpoint-status-detail">
         <span class="dot"></span>
-        <span>${window.HRAX_LLM.isConfigured() ? 'LLM 연결됨' : 'LLM 미설정'}</span>
+        <span>${window.HRAX_LLM.isConfigured() ? window.HRAX_LLM.statusLabel() : 'LLM 미설정'}</span>
       </div>
     </div>
     <div class="route-banner ${card.grade}">
@@ -396,7 +396,7 @@ function updateEndpointStatus() {
   if (!el) return;
   if (window.HRAX_LLM.isConfigured()) {
     el.classList.add('connected');
-    el.querySelector('span:last-child').textContent = `LLM: ${window.HRAX_LLM.config.model}`;
+    el.querySelector('span:last-child').textContent = `LLM: ${window.HRAX_LLM.statusLabel()}`;
   } else {
     el.classList.remove('connected');
     el.querySelector('span:last-child').textContent = 'LLM 미설정';

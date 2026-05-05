@@ -1,7 +1,7 @@
 /**
  * HR AX Platform — LLM Client (STUB)
  *
- * 다음 LLM이 이 파일을 채워야 합니다. 현재는 껍데기.
+ * Docker 실행 시 backend의 /api/llm/chat/completions 프록시를 기본 사용합니다.
  *
  * 지원 백엔드 (예상):
  *  - OpenAI 호환 API (Ollama, LM Studio, vLLM, OpenAI 자체)
@@ -9,10 +9,7 @@
  *  - 사외 LLM (Chat GPT, Gemini) — 별도 어댑터
  *
  * TODO:
- *  - [ ] LLM endpoint config 저장/로드 (localStorage)
- *  - [ ] OpenAI 호환 fetch 호출 (chat/completions)
  *  - [ ] 스트리밍 응답 처리
- *  - [ ] 에러 핸들링
  *  - [ ] 비식별화 게이트 호출 (민감 등급일 때)
  *  - [ ] 분류 Agent 호출 (System Agent, 사내 LLM 전담)
  *  - [ ] Function Calling 패턴 구현 (Tool 호출 의도 → 사내 실행)
@@ -41,13 +38,54 @@ class LLMClient {
   }
 
   isConfigured() {
-    return !!this.config.endpoint && !!this.config.model;
+    return (!!this.config.endpoint && !!this.config.model) || this.usesServerProxy();
+  }
+
+  usesServerProxy() {
+    return !this.config.endpoint && (location.protocol === 'http:' || location.protocol === 'https:');
+  }
+
+  statusLabel() {
+    if (this.config.endpoint && this.config.model) return this.config.model;
+    if (this.usesServerProxy()) return 'Server LLM Proxy';
+    return 'LLM 미설정';
+  }
+
+  getEffectiveEndpoint() {
+    return this.config.endpoint || '/api/llm/chat/completions';
+  }
+
+  getEffectiveModel() {
+    return this.config.model || '';
+  }
+
+  _buildSystemPrompt(assembly) {
+    const agent = assembly.agent
+      ? `Agent: ${assembly.agent.name} (${assembly.agent.type})\n${assembly.agent.sub || ''}`
+      : 'Agent: 미부착. Skill, Tool, Context를 기준으로 기본 HR AX Copilot처럼 처리.';
+    const skill = assembly.skill
+      ? `Skill: ${assembly.skill.name}\n${assembly.skill.sub || ''}`
+      : 'Skill: 미부착';
+    const tool = assembly.tool && assembly.tool.length > 0
+      ? `Tool: ${assembly.tool.join(', ')}`
+      : 'Tool: 미부착';
+    const context = assembly.context && assembly.context.length > 0
+      ? `Context: ${assembly.context.join(', ')}`
+      : 'Context: 미부착';
+
+    return [
+      '당신은 HR AX Platform의 HR 업무 Copilot입니다.',
+      '한국어로 간결하고 실무적인 답변을 작성합니다.',
+      '확정할 수 없는 내용은 추정으로 표시하고, 필요한 확인사항을 분리합니다.',
+      agent,
+      skill,
+      tool,
+      context
+    ].join('\n\n');
   }
 
   /**
    * 메인 호출 함수
-   * TODO: 다음 LLM이 구현
-   *
    * @param {Object} params
    * @param {string} params.cardId           - 카드 ID
    * @param {string} params.userMessage      - 사용자 입력
@@ -57,30 +95,45 @@ class LLMClient {
    * @returns {Promise<string>} 응답 본문
    */
   async chat(params) {
-    if (!this.isConfigured()) {
-      console.info('[LLMClient] endpoint not configured — returning sample response');
-    }
-
-    // TODO: 실제 호출 구현
-    // 1. params.assembly에서 system prompt 구성 (Agent + Skill + Context)
-    // 2. params.grade가 'sensitive'면 비식별화 게이트 호출 (마스킹)
-    // 3. fetch(this.config.endpoint, ...)
-    // 4. 응답 스트리밍 처리
-    // 5. 'sensitive'였으면 사내 재매핑
-    // 6. Audit Log 기록
-
-    console.info('[LLMClient] chat() not implemented — stub mode');
-    console.log('Params:', params);
-
-    // STUB: 시나리오 데이터의 sampleAgentReply 반환
     const scenario = window.HRAX_DATA.SCENARIOS.find(s => s.id === params.cardId);
-    if (scenario && scenario.sampleAgentReply) {
-      // 가짜 지연 (실제 호출 느낌)
-      await new Promise(r => setTimeout(r, 800));
-      return scenario.sampleAgentReply + '\n\n[SAMPLE 응답입니다. 실제 LLM 호출은 llm-client.js 구현 후 동작합니다.]';
+    const endpoint = this.getEffectiveEndpoint();
+    const model = this.getEffectiveModel();
+    const messages = [
+      { role: 'system', content: this._buildSystemPrompt(params.assembly) },
+      { role: 'user', content: params.userMessage }
+    ];
+    const headers = { 'Content-Type': 'application/json' };
+    if (this.config.apiKey) headers.Authorization = `Bearer ${this.config.apiKey}`;
+
+    try {
+      const body = {
+        messages,
+        temperature: 0.3,
+        max_tokens: 1200
+      };
+      if (model) body.model = model;
+
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) throw new Error(`LLM proxy error ${res.status}`);
+      const data = await res.json();
+      const reply = data?.choices?.[0]?.message?.content;
+      if (reply) return reply;
+      throw new Error('LLM response format invalid');
+    } catch (err) {
+      console.info('[LLMClient] live call failed — falling back to sample', err);
     }
 
-    return '[STUB] LLM client 미구현. BUILD_SPEC.md 참조.';
+    // Fallback: 시나리오 데이터의 sampleAgentReply 반환
+    if (scenario && scenario.sampleAgentReply) {
+      await new Promise(r => setTimeout(r, 800));
+      return scenario.sampleAgentReply + '\n\n[SAMPLE 응답입니다. Docker 백엔드 또는 LLM API 연결 실패 시 fallback으로 표시됩니다.]';
+    }
+
+    return '[SAMPLE] LLM 응답을 가져오지 못했습니다.';
   }
 
   /**
