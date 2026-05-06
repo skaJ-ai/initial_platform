@@ -7,6 +7,14 @@
     nav: null,
     currentUser: '',
     comments: [],
+    pageMeta: null,
+    manageEl: null,
+    commentEditor: null,
+    edit: {
+      area: null,
+      active: false,
+      original: '',
+    },
   };
 
   function normalizedPathname() {
@@ -91,7 +99,30 @@
       day: '2-digit',
       hour: '2-digit',
       minute: '2-digit',
+      hour12: false,
     }).format(date);
+  }
+
+  function formatFullDateTime(value) {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return new Intl.DateTimeFormat('ko-KR', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    }).format(date);
+  }
+
+  function sameMinute(left, right) {
+    if (!left || !right) return true;
+    const a = new Date(left);
+    const b = new Date(right);
+    if (Number.isNaN(a.getTime()) || Number.isNaN(b.getTime())) return left === right;
+    return Math.abs(a.getTime() - b.getTime()) < 60000;
   }
 
   function createButton(label, className, action) {
@@ -120,12 +151,14 @@
     });
     state.users = data.users || state.users;
     state.currentUser = data.name;
-    renderUserBar();
+    updateManageUserSelects();
+    updateCommentAuthorLabel();
+    renderComments();
     await markSeen();
-    await refreshNav();
   }
 
   function populateUserSelect(select) {
+    if (!select) return;
     select.innerHTML = '';
     const placeholder = document.createElement('option');
     placeholder.value = '';
@@ -141,135 +174,300 @@
     });
   }
 
-  function renderAuthorControl(container) {
-    const author = document.createElement('div');
-    author.className = 'sidebar-author-control';
-    author.innerHTML = `
-      <label for="wiki-author-select">작성자</label>
-      <div class="sidebar-author-row">
-        <select id="wiki-author-select" class="wiki-select" data-user-select aria-label="작성자"></select>
-        <button type="button" class="btn-wiki icon" data-user-add title="사용자 추가">+</button>
-      </div>
-    `;
-    container.appendChild(author);
-    populateUserSelect(author.querySelector('[data-user-select]'));
-    author.querySelector('[data-user-add]').addEventListener('click', () => {
-      addUser().catch((err) => window.alert(`사용자 추가 실패: ${err.message || err}`));
-    });
-    author.querySelector('[data-user-select]').addEventListener('change', async (event) => {
-      state.currentUser = event.target.value;
-      updateCommentAuthorLabel();
-      await markSeen();
-      await refreshNav();
-    });
+  function updateManageUserSelects() {
+    document.querySelectorAll('[data-user-select]').forEach((select) => populateUserSelect(select));
   }
 
-  function renderSidebarActions(sidebar, categories) {
-    const manage = document.createElement('div');
-    manage.className = 'sidebar-manage';
-
-    const heading = document.createElement('div');
-    heading.className = 'sidebar-manage-title';
-    heading.textContent = 'Wiki Manage';
-    manage.appendChild(heading);
-    renderAuthorControl(manage);
-
-    const tools = document.createElement('div');
-    tools.className = 'sidebar-tools';
-    tools.appendChild(createButton('+ Category', 'btn-wiki sidebar-btn', 'sidebar-category'));
-    tools.appendChild(createButton('+ Page', 'btn-wiki sidebar-btn', 'sidebar-page'));
-
-    const panel = document.createElement('div');
-    panel.className = 'sidebar-create-panel';
-    panel.hidden = true;
-    panel.innerHTML = `
-      <select class="wiki-select" data-new-page-category aria-label="카테고리"></select>
-      <input type="text" class="wiki-input" data-new-page-title placeholder="페이지 제목">
-      <input type="text" class="wiki-input" data-new-page-slug placeholder="url-slug">
-      <div class="sidebar-create-actions">
-        <button type="button" class="btn-wiki primary" data-create-page>생성</button>
-        <button type="button" class="btn-wiki" data-cancel-page>취소</button>
-      </div>
-    `;
-
-    const categorySelect = panel.querySelector('[data-new-page-category]');
+  function updateNewPageCategories(categories) {
+    const select = state.manageEl && state.manageEl.querySelector('[data-new-page-category]');
+    if (!select) return;
+    const current = select.value;
+    select.innerHTML = '';
     categories.forEach((category) => {
       const option = document.createElement('option');
       option.value = category.id;
       option.textContent = category.title;
-      categorySelect.appendChild(option);
+      select.appendChild(option);
     });
-    if (categorySelect.querySelector('option[value="concepts"]')) {
-      categorySelect.value = 'concepts';
+    if (current && select.querySelector(`option[value="${CSS.escape(current)}"]`)) {
+      select.value = current;
+    } else if (select.querySelector('option[value="concepts"]')) {
+      select.value = 'concepts';
     }
+  }
 
-    const titleInput = panel.querySelector('[data-new-page-title]');
-    const slugInput = panel.querySelector('[data-new-page-slug]');
-    slugInput.dataset.slugTouched = 'false';
-    titleInput.addEventListener('input', () => {
-      if (slugInput.dataset.slugTouched !== 'true') {
-        slugInput.value = slugFromTitle(titleInput.value);
+  function setManageStatus(message, tone) {
+    const status = state.manageEl && state.manageEl.querySelector('[data-wiki-status]');
+    if (!status) return;
+    status.textContent = message || '';
+    status.dataset.tone = tone || '';
+  }
+
+  function updateManagePageMeta() {
+    const meta = state.manageEl && state.manageEl.querySelector('[data-page-meta]');
+    if (!meta) return;
+    const page = state.pageMeta;
+    if (!page || !page.has_overlay) {
+      meta.textContent = 'No local edits yet';
+      meta.dataset.tone = '';
+      return;
+    }
+    const by = page.updated_by || 'local';
+    const at = formatFullDateTime(page.updated_at);
+    meta.textContent = at ? `Last edited by ${by} · ${at}` : `Last edited by ${by}`;
+    meta.dataset.tone = page.upstream_changed ? 'warning' : 'success';
+  }
+
+  function syncEditControls() {
+    const manage = state.manageEl;
+    if (!manage) return;
+    manage.querySelector('[data-action="edit"]').hidden = state.edit.active;
+    manage.querySelector('[data-action="save"]').hidden = !state.edit.active;
+    manage.querySelector('[data-action="cancel"]').hidden = !state.edit.active;
+    const tools = manage.querySelector('[data-edit-tools]');
+    if (tools) tools.hidden = !state.edit.active;
+  }
+
+  async function loadPageMeta() {
+    if (!isHttp || !isEditablePage()) return;
+    try {
+      state.pageMeta = await apiFetch(`/page?path=${encodeURIComponent(currentWikiPath())}`);
+      updateManagePageMeta();
+      if (state.pageMeta.upstream_changed) {
+        setManageStatus(`Seed changed after local edit by ${state.pageMeta.updated_by || 'local'}`, 'error');
+      } else if (state.pageMeta.has_overlay) {
+        setManageStatus('', '');
+      }
+    } catch (err) {
+      setManageStatus(`Page meta failed: ${err.message || err}`, 'error');
+    }
+  }
+
+  function initManageEvents(manage) {
+    manage.addEventListener('mousedown', (event) => {
+      if (event.target.closest('button[data-edit-tool]')) {
+        event.preventDefault();
       }
     });
-    slugInput.addEventListener('input', () => {
-      slugInput.dataset.slugTouched = 'true';
-    });
 
-    tools.querySelector('[data-action="sidebar-page"]').addEventListener('click', () => {
-      panel.hidden = !panel.hidden;
-      if (!panel.hidden) titleInput.focus();
-    });
-    tools.querySelector('[data-action="sidebar-category"]').addEventListener('click', async () => {
-      const author = requireCurrentUser('카테고리 생성');
-      if (!author) return;
-      const title = window.prompt('새 카테고리 이름');
-      if (!title || !title.trim()) return;
-      try {
-        await apiFetch('/category', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ title: title.trim(), author }),
-        });
-        await refreshNav();
-      } catch (err) {
-        window.alert(`카테고리 생성 실패: ${err.message || err}`);
-      }
-    });
-    panel.querySelector('[data-cancel-page]').addEventListener('click', () => {
-      panel.hidden = true;
-      titleInput.value = '';
-      slugInput.value = '';
-      slugInput.dataset.slugTouched = 'false';
-    });
-    panel.querySelector('[data-create-page]').addEventListener('click', async () => {
-      const author = requireCurrentUser('페이지 생성');
-      if (!author) return;
-      const title = titleInput.value.trim();
-      const slug = slugInput.value.trim() || slugFromTitle(title);
-      if (!title) {
-        titleInput.focus();
+    manage.addEventListener('change', async (event) => {
+      const target = event.target;
+      if (target.matches('[data-user-select]')) {
+        state.currentUser = target.value;
+        updateCommentAuthorLabel();
+        renderComments();
+        await markSeen();
         return;
       }
-      try {
-        const data = await apiFetch('/page', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            title,
-            slug,
-            category_id: categorySelect.value,
-            author,
-          }),
-        });
-        location.href = data.url;
-      } catch (err) {
-        window.alert(`페이지 생성 실패: ${err.message || err}`);
+      if (target.matches('[data-action="style"]')) {
+        applySemanticStyle(editArea(), target.value);
+        target.value = 'p';
+        return;
+      }
+      if (target.matches('[data-action="tone"]')) {
+        applyTone(editArea(), target.value);
+        target.value = '';
       }
     });
 
-    manage.appendChild(tools);
-    manage.appendChild(panel);
+    manage.addEventListener('input', (event) => {
+      if (event.target.matches('[data-new-page-title]')) {
+        const slugInput = manage.querySelector('[data-new-page-slug]');
+        if (slugInput && slugInput.dataset.slugTouched !== 'true') {
+          slugInput.value = slugFromTitle(event.target.value);
+        }
+      }
+      if (event.target.matches('[data-new-page-slug]')) {
+        event.target.dataset.slugTouched = 'true';
+      }
+    });
+
+    manage.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-action], [data-user-add], [data-create-page], [data-cancel-page]');
+      if (!button) return;
+      const action = button.dataset.action;
+      const task = handleManageClick(button, action);
+      if (task && typeof task.catch === 'function') {
+        task.catch((err) => {
+          window.alert(`Wiki 관리 실패: ${err.message || err}`);
+          setManageStatus(`Failed: ${err.message || err}`, 'error');
+        });
+      }
+    });
+  }
+
+  async function handleManageClick(button, action) {
+    if (button.hasAttribute('data-user-add')) {
+      await addUser();
+      return;
+    }
+    if (button.hasAttribute('data-cancel-page')) {
+      resetCreatePanel();
+      return;
+    }
+    if (button.hasAttribute('data-create-page')) {
+      await createPageFromPanel();
+      return;
+    }
+    if (button.hasAttribute('data-edit-tool')) {
+      handleEditTool(action);
+      return;
+    }
+    if (action === 'edit') startEdit();
+    if (action === 'save') await saveEdit();
+    if (action === 'cancel') cancelEdit();
+    if (action === 'history') await openHistory();
+    if (action === 'sidebar-page') toggleCreatePanel();
+    if (action === 'sidebar-category') await createCategoryFromPrompt();
+  }
+
+  function renderSidebarActions(sidebar, categories, existingManage) {
+    const manage = existingManage || document.createElement('div');
+    manage.className = 'sidebar-manage';
+    if (!manage.dataset.ready) {
+      manage.dataset.ready = 'true';
+      manage.innerHTML = `
+        <div class="sidebar-manage-title">Wiki Manage</div>
+        <div class="manage-section author-section">
+          <label class="manage-label" for="wiki-author-select">작성자</label>
+          <div class="sidebar-author-row">
+            <select id="wiki-author-select" class="wiki-select" data-user-select aria-label="작성자"></select>
+            <button type="button" class="btn-wiki icon" data-user-add title="사용자 추가">+</button>
+          </div>
+        </div>
+        <div class="manage-section page-actions-section">
+          <div class="manage-section-title">Page Actions</div>
+          <div class="page-meta-status" data-page-meta>No local edits yet</div>
+          <div class="page-action-row">
+            <button type="button" class="btn-wiki sidebar-btn" data-action="edit">Edit</button>
+            <button type="button" class="btn-wiki primary sidebar-btn" data-action="save" hidden>Save</button>
+            <button type="button" class="btn-wiki sidebar-btn" data-action="cancel" hidden>Cancel</button>
+            <button type="button" class="btn-wiki sidebar-btn" data-action="history">History</button>
+          </div>
+          <div class="wiki-status manage-status" data-wiki-status></div>
+          <div class="edit-tools-panel" data-edit-tools hidden>
+            <select class="wiki-select" data-action="style" aria-label="Text style">
+              <option value="p">본문</option>
+              <option value="h2">제목</option>
+              <option value="h3">소제목</option>
+              <option value="h4">내용 제목</option>
+              <option value="dim">보조 설명</option>
+            </select>
+            <button type="button" class="btn-wiki" data-action="bold" data-edit-tool>Bold</button>
+            <button type="button" class="btn-wiki" data-action="bullet" data-edit-tool>List</button>
+            <button type="button" class="btn-wiki" data-action="numbered" data-edit-tool>1. List</button>
+            <button type="button" class="btn-wiki" data-action="table" data-edit-tool>Table</button>
+            <button type="button" class="btn-wiki" data-action="cards2" data-edit-tool>2 Cards</button>
+            <button type="button" class="btn-wiki" data-action="cards3" data-edit-tool>3 Cards</button>
+            <button type="button" class="btn-wiki" data-action="callout" data-edit-tool>Callout</button>
+            <button type="button" class="btn-wiki" data-action="faq" data-edit-tool>FAQ</button>
+            <select class="wiki-select" data-action="tone" aria-label="Tone">
+              <option value="">색상</option>
+              <option value="cyan">정보</option>
+              <option value="purple">강조</option>
+              <option value="amber">주의</option>
+              <option value="green">성공</option>
+              <option value="rose">위험</option>
+            </select>
+          </div>
+        </div>
+        <div class="manage-section create-section">
+          <div class="manage-section-title">Create</div>
+          <div class="sidebar-tools">
+            <button type="button" class="btn-wiki sidebar-btn" data-action="sidebar-category">+ Category</button>
+            <button type="button" class="btn-wiki sidebar-btn" data-action="sidebar-page">+ Page</button>
+          </div>
+          <div class="sidebar-create-panel" hidden>
+            <div class="create-grid">
+              <label>
+                <span>Category</span>
+                <select class="wiki-select" data-new-page-category aria-label="카테고리"></select>
+              </label>
+              <label>
+                <span>Page</span>
+                <input type="text" class="wiki-input" data-new-page-title placeholder="페이지 제목">
+              </label>
+            </div>
+            <input type="text" class="wiki-input" data-new-page-slug placeholder="url-slug">
+            <div class="sidebar-create-actions">
+              <button type="button" class="btn-wiki primary" data-create-page>생성</button>
+              <button type="button" class="btn-wiki" data-cancel-page>취소</button>
+            </div>
+          </div>
+        </div>
+      `;
+      const slugInput = manage.querySelector('[data-new-page-slug]');
+      if (slugInput) slugInput.dataset.slugTouched = 'false';
+      initManageEvents(manage);
+    }
+    state.manageEl = manage;
+    updateNewPageCategories(categories);
+    updateManageUserSelects();
+    updateManagePageMeta();
+    syncEditControls();
     sidebar.appendChild(manage);
+  }
+
+  function toggleCreatePanel() {
+    const panel = state.manageEl.querySelector('.sidebar-create-panel');
+    if (!panel) return;
+    panel.hidden = !panel.hidden;
+    if (!panel.hidden) {
+      const titleInput = panel.querySelector('[data-new-page-title]');
+      if (titleInput) titleInput.focus();
+    }
+  }
+
+  function resetCreatePanel() {
+    const panel = state.manageEl && state.manageEl.querySelector('.sidebar-create-panel');
+    if (!panel) return;
+    panel.hidden = true;
+    const titleInput = panel.querySelector('[data-new-page-title]');
+    const slugInput = panel.querySelector('[data-new-page-slug]');
+    if (titleInput) titleInput.value = '';
+    if (slugInput) {
+      slugInput.value = '';
+      slugInput.dataset.slugTouched = 'false';
+    }
+  }
+
+  async function createCategoryFromPrompt() {
+    const author = requireCurrentUser('카테고리 생성');
+    if (!author) return;
+    const title = window.prompt('새 카테고리 이름');
+    if (!title || !title.trim()) return;
+    await apiFetch('/category', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: title.trim(), author }),
+    });
+    await refreshNav();
+  }
+
+  async function createPageFromPanel() {
+    const author = requireCurrentUser('페이지 생성');
+    if (!author) return;
+    const panel = state.manageEl.querySelector('.sidebar-create-panel');
+    const titleInput = panel.querySelector('[data-new-page-title]');
+    const slugInput = panel.querySelector('[data-new-page-slug]');
+    const categorySelect = panel.querySelector('[data-new-page-category]');
+    const title = titleInput.value.trim();
+    const slug = slugInput.value.trim() || slugFromTitle(title);
+    if (!title) {
+      titleInput.focus();
+      return;
+    }
+    const data = await apiFetch('/page', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title,
+        slug,
+        category_id: categorySelect.value,
+        author,
+      }),
+    });
+    location.href = data.url;
   }
 
   function navActionButton(label, title, action) {
@@ -325,6 +523,7 @@
       body: JSON.stringify({ path: item.path, title: title.trim(), author }),
     });
     await refreshNav();
+    await loadPageMeta();
   }
 
   async function deletePage(item) {
@@ -433,12 +632,14 @@
     const sidebar = document.querySelector('aside.sidebar');
     if (!sidebar || !navData) return;
 
-    const logo = sidebar.querySelector('.logo') || document.createElement('a');
+    const existingManage = state.manageEl || sidebar.querySelector('.sidebar-manage');
+    if (existingManage && existingManage.parentElement) existingManage.remove();
+
+    sidebar.innerHTML = '';
+    const logo = document.createElement('a');
     logo.href = '/wiki/overview.html';
     logo.className = 'logo';
     logo.textContent = 'HR AX Platform';
-
-    sidebar.innerHTML = '';
     sidebar.appendChild(logo);
 
     const scrollArea = document.createElement('div');
@@ -474,7 +675,7 @@
     scrollArea.appendChild(mvpLink);
 
     sidebar.appendChild(scrollArea);
-    renderSidebarActions(sidebar, navData.categories || []);
+    renderSidebarActions(sidebar, navData.categories || [], existingManage);
   }
 
   async function refreshNav() {
@@ -491,18 +692,6 @@
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ path: currentWikiPath(), user: currentUser() }),
-    });
-  }
-
-  function setStatus(toolbar, message, tone) {
-    const status = toolbar.querySelector('[data-wiki-status]');
-    status.textContent = message || '';
-    status.dataset.tone = tone || '';
-  }
-
-  function setEditToolsVisible(toolbar, visible) {
-    toolbar.querySelectorAll('[data-edit-tool]').forEach((node) => {
-      node.hidden = !visible;
     });
   }
 
@@ -524,6 +713,7 @@
   }
 
   function applySemanticStyle(main, value) {
+    if (!main) return;
     main.focus();
     if (value === 'dim') {
       runCommand('formatBlock', 'p');
@@ -537,7 +727,7 @@
   }
 
   function applyTone(main, tone) {
-    if (!tone) return;
+    if (!main || !tone) return;
     const toneClasses = ['cyan', 'purple', 'amber', 'green', 'rose'];
     const block = selectedBlock(main);
     const target = block.closest ? block.closest('.card,.callout,blockquote,.tag,.text-tone') : null;
@@ -572,7 +762,7 @@
   }
 
   function insertCallout(main) {
-    insertHtml(main, `<blockquote class="callout cyan"><p><strong>핵심 메모</strong><br>강조할 내용을 입력하세요.</p></blockquote><p></p>`);
+    insertHtml(main, '<blockquote class="callout cyan"><p><strong>핵심 메모</strong><br>강조할 내용을 입력하세요.</p></blockquote><p></p>');
   }
 
   function insertFaq(main) {
@@ -600,135 +790,244 @@
     return area;
   }
 
-  function createToolbar() {
+  function setupEditableArea() {
     const main = document.querySelector('main.content');
     if (!main || !isHttp || !isEditablePage()) return;
-    const editArea = ensureEditableArea(main);
+    state.edit.area = ensureEditableArea(main);
+  }
 
-    const toolbar = document.createElement('div');
-    toolbar.className = 'wiki-toolbar';
-    toolbar.innerHTML = `
-      <select class="wiki-select" data-action="style" data-edit-tool hidden aria-label="Text style">
-        <option value="p">본문</option>
-        <option value="h2">제목</option>
-        <option value="h3">소제목</option>
-        <option value="h4">내용 제목</option>
-        <option value="dim">보조 설명</option>
-      </select>
-      <button type="button" class="btn-wiki" data-action="bold" data-edit-tool hidden>Bold</button>
-      <button type="button" class="btn-wiki" data-action="bullet" data-edit-tool hidden>List</button>
-      <button type="button" class="btn-wiki" data-action="numbered" data-edit-tool hidden>1. List</button>
-      <button type="button" class="btn-wiki" data-action="table" data-edit-tool hidden>Table</button>
-      <button type="button" class="btn-wiki" data-action="cards2" data-edit-tool hidden>2 Cards</button>
-      <button type="button" class="btn-wiki" data-action="cards3" data-edit-tool hidden>3 Cards</button>
-      <button type="button" class="btn-wiki" data-action="callout" data-edit-tool hidden>Callout</button>
-      <button type="button" class="btn-wiki" data-action="faq" data-edit-tool hidden>FAQ</button>
-      <select class="wiki-select" data-action="tone" data-edit-tool hidden aria-label="Tone">
-        <option value="">색상</option>
-        <option value="cyan">정보</option>
-        <option value="purple">강조</option>
-        <option value="amber">주의</option>
-        <option value="green">성공</option>
-        <option value="rose">위험</option>
-      </select>
-      <button type="button" class="btn-wiki" data-action="edit">Edit</button>
-      <button type="button" class="btn-wiki primary" data-action="save" hidden>Save</button>
-      <button type="button" class="btn-wiki" data-action="cancel" hidden>Cancel</button>
-      <span class="wiki-status" data-wiki-status></span>
+  function editArea() {
+    if (!state.edit.area) setupEditableArea();
+    return state.edit.area;
+  }
+
+  function startEdit() {
+    const author = requireCurrentUser('수정');
+    if (!author) return;
+    const area = editArea();
+    if (!area || state.edit.active) return;
+    state.edit.original = area.innerHTML;
+    state.edit.active = true;
+    area.contentEditable = 'true';
+    area.classList.add('wiki-editing');
+    syncEditControls();
+    setManageStatus(`Editing as ${author}`, '');
+    area.focus();
+  }
+
+  function cancelEdit() {
+    const area = editArea();
+    if (!area || !state.edit.active) return;
+    area.innerHTML = state.edit.original;
+    state.edit.original = '';
+    state.edit.active = false;
+    area.contentEditable = 'false';
+    area.classList.remove('wiki-editing');
+    syncEditControls();
+    setManageStatus('Edit cancelled', '');
+  }
+
+  async function saveEdit() {
+    const author = requireCurrentUser('저장');
+    if (!author) return;
+    const area = editArea();
+    if (!area || !state.edit.active) return;
+    setManageStatus('Saving...', '');
+    const data = await apiFetch('/page', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: currentWikiPath(), content: area.innerHTML, author }),
+    });
+    state.edit.original = '';
+    state.edit.active = false;
+    area.contentEditable = 'false';
+    area.classList.remove('wiki-editing');
+    state.pageMeta = {
+      ...(state.pageMeta || {}),
+      path: data.path,
+      updated_at: data.updated_at,
+      updated_by: data.updated_by || author,
+      has_overlay: true,
+      upstream_changed: false,
+    };
+    syncEditControls();
+    updateManagePageMeta();
+    setManageStatus(`Saved by ${data.updated_by || author} · ${formatFullDateTime(data.updated_at)}`, 'success');
+    await markSeen();
+    await refreshNav();
+  }
+
+  function handleEditTool(action) {
+    const area = editArea();
+    if (!area || !state.edit.active) return;
+    if (action === 'bold') runCommand('bold');
+    if (action === 'bullet') runCommand('insertUnorderedList');
+    if (action === 'numbered') runCommand('insertOrderedList');
+    if (action === 'table') insertTable(area);
+    if (action === 'cards2') insertCards(area, 2);
+    if (action === 'cards3') insertCards(area, 3);
+    if (action === 'callout') insertCallout(area);
+    if (action === 'faq') insertFaq(area);
+    area.focus();
+  }
+
+  function createModal(title) {
+    const modal = document.createElement('div');
+    modal.className = 'wiki-modal';
+    modal.innerHTML = `
+      <div class="wiki-modal-card" role="dialog" aria-modal="true" aria-label="${title}">
+        <div class="wiki-modal-header">
+          <h2>${title}</h2>
+          <button type="button" class="btn-wiki icon" data-modal-close aria-label="닫기">×</button>
+        </div>
+        <div class="wiki-modal-body"></div>
+      </div>
     `;
-    main.insertBefore(toolbar, editArea);
-    toolbar.contentEditable = 'false';
-    setEditToolsVisible(toolbar, false);
-
-    apiFetch(`/page?path=${encodeURIComponent(currentWikiPath())}`)
-      .then((data) => {
-        if (data.upstream_changed) {
-          setStatus(toolbar, `Local DB edit by ${data.updated_by || 'local'}; seed changed`, 'error');
-        } else if (data.has_overlay) {
-          setStatus(toolbar, `Local DB edit by ${data.updated_by || 'local'}`, 'success');
-        }
-      })
-      .catch(() => {});
-
-    let original = '';
-
-    toolbar.querySelector('[data-action="edit"]').addEventListener('click', () => {
-      original = editArea.innerHTML;
-      editArea.contentEditable = 'true';
-      editArea.classList.add('wiki-editing');
-      toolbar.querySelector('[data-action="edit"]').hidden = true;
-      toolbar.querySelector('[data-action="save"]').hidden = false;
-      toolbar.querySelector('[data-action="cancel"]').hidden = false;
-      setEditToolsVisible(toolbar, true);
-      setStatus(toolbar, currentUser() ? `Editing as ${currentUser()}` : '작성자 선택 필요', '');
-      editArea.focus();
-    });
-
-    toolbar.querySelector('[data-action="cancel"]').addEventListener('click', () => {
-      editArea.innerHTML = original;
-      editArea.contentEditable = 'false';
-      editArea.classList.remove('wiki-editing');
-      toolbar.querySelector('[data-action="edit"]').hidden = false;
-      toolbar.querySelector('[data-action="save"]').hidden = true;
-      toolbar.querySelector('[data-action="cancel"]').hidden = true;
-      setEditToolsVisible(toolbar, false);
-      setStatus(toolbar, 'Edit cancelled', '');
-    });
-
-    toolbar.querySelector('[data-action="save"]').addEventListener('click', async () => {
-      const author = requireCurrentUser('저장');
-      if (!author) return;
-      setStatus(toolbar, 'Saving...', '');
-      try {
-        await apiFetch('/page', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ path: currentWikiPath(), content: editArea.innerHTML, author }),
-        });
-        editArea.contentEditable = 'false';
-        editArea.classList.remove('wiki-editing');
-        toolbar.querySelector('[data-action="edit"]').hidden = false;
-        toolbar.querySelector('[data-action="save"]').hidden = true;
-        toolbar.querySelector('[data-action="cancel"]').hidden = true;
-        setEditToolsVisible(toolbar, false);
-        setStatus(toolbar, `Saved by ${author}`, 'success');
-        await markSeen();
-        await refreshNav();
-      } catch (err) {
-        setStatus(toolbar, `Save failed: ${err.message || err}`, 'error');
+    modal.addEventListener('click', (event) => {
+      if (event.target === modal || event.target.closest('[data-modal-close]')) {
+        modal.remove();
       }
     });
+    document.body.appendChild(modal);
+    return modal;
+  }
 
-    toolbar.addEventListener('click', (event) => {
-      const action = event.target.dataset && event.target.dataset.action;
-      if (!action || !event.target.hasAttribute('data-edit-tool')) return;
-      event.preventDefault();
-      if (action === 'bold') runCommand('bold');
-      if (action === 'bullet') runCommand('insertUnorderedList');
-      if (action === 'numbered') runCommand('insertOrderedList');
-      if (action === 'table') insertTable(editArea);
-      if (action === 'cards2') insertCards(editArea, 2);
-      if (action === 'cards3') insertCards(editArea, 3);
-      if (action === 'callout') insertCallout(editArea);
-      if (action === 'faq') insertFaq(editArea);
-      editArea.focus();
+  async function openHistory() {
+    const modal = createModal('Page History');
+    const body = modal.querySelector('.wiki-modal-body');
+    body.innerHTML = '<div class="history-loading">히스토리를 불러오는 중입니다.</div>';
+    const data = await apiFetch(`/revisions?path=${encodeURIComponent(currentWikiPath())}`);
+    const current = data.current || {};
+    const revisions = Array.isArray(data.revisions) ? data.revisions : [];
+    body.innerHTML = `
+      <div class="history-current">
+        <div class="history-label">Current</div>
+        <div>${current.updated_by || 'local'} · ${formatFullDateTime(current.updated_at) || 'No local edits yet'}</div>
+      </div>
+      <div class="history-list" data-history-list></div>
+      <div class="history-preview" data-history-preview>
+        <p>히스토리 항목의 View를 누르면 당시 내용을 확인할 수 있습니다.</p>
+      </div>
+    `;
+    const list = body.querySelector('[data-history-list]');
+    if (!revisions.length) {
+      list.innerHTML = '<div class="history-empty">저장된 히스토리가 없습니다.</div>';
+      return;
+    }
+    revisions.forEach((revision) => {
+      const row = document.createElement('div');
+      row.className = 'history-row';
+      row.innerHTML = `
+        <div>
+          <strong>${revision.action || 'update'}</strong>
+          <span>${revision.updated_by || 'local'} · ${formatFullDateTime(revision.created_at)}</span>
+        </div>
+        <button type="button" class="btn-wiki" data-revision-id="${revision.id}">View</button>
+      `;
+      list.appendChild(row);
     });
-
-    toolbar.querySelector('[data-action="style"]').addEventListener('change', (event) => {
-      applySemanticStyle(editArea, event.target.value);
-      event.target.value = 'p';
-    });
-
-    toolbar.querySelector('[data-action="tone"]').addEventListener('change', (event) => {
-      applyTone(editArea, event.target.value);
-      event.target.value = '';
-      editArea.focus();
+    list.addEventListener('click', async (event) => {
+      const button = event.target.closest('[data-revision-id]');
+      if (!button) return;
+      const preview = body.querySelector('[data-history-preview]');
+      preview.innerHTML = '<p>불러오는 중입니다.</p>';
+      const revision = await apiFetch(`/revisions/${encodeURIComponent(button.dataset.revisionId)}`);
+      preview.innerHTML = `
+        <div class="history-preview-meta">
+          ${revision.action || 'update'} · ${revision.updated_by || 'local'} · ${formatFullDateTime(revision.created_at)}
+        </div>
+        <div class="history-preview-content">${revision.content || '<p>내용 없음</p>'}</div>
+      `;
     });
   }
 
   function updateCommentAuthorLabel() {
     const label = document.querySelector('[data-comment-author]');
     if (label) label.textContent = currentUserLabel();
+  }
+
+  function commentTree(comments) {
+    const map = new Map();
+    const roots = [];
+    comments.forEach((comment) => {
+      map.set(comment.id, { comment, children: [] });
+    });
+    map.forEach((node) => {
+      const parentId = node.comment.parent_id;
+      if (parentId && map.has(parentId)) {
+        map.get(parentId).children.push(node);
+      } else {
+        roots.push(node);
+      }
+    });
+    return roots;
+  }
+
+  function makeInlineCommentEditor(mode, comment) {
+    const editor = document.createElement('div');
+    editor.className = 'inline-comment-editor';
+    editor.innerHTML = `
+      <textarea class="wiki-textarea" rows="3">${mode === 'edit' ? comment.body || '' : ''}</textarea>
+      <div class="inline-comment-actions">
+        <button type="button" class="btn-wiki primary" data-comment-submit="${mode}" data-comment-id="${comment.id}">
+          ${mode === 'edit' ? '저장' : '전송'}
+        </button>
+        <button type="button" class="btn-wiki" data-comment-action="cancel-editor">취소</button>
+      </div>
+    `;
+    return editor;
+  }
+
+  function renderCommentNode(node) {
+    const { comment, children } = node;
+    const wrapper = document.createElement('div');
+    wrapper.className = 'comment-thread';
+    const item = document.createElement('article');
+    item.className = 'comment-item';
+    if (comment.deleted_at) item.classList.add('deleted');
+
+    const meta = document.createElement('div');
+    meta.className = 'comment-meta';
+    const edited = !comment.deleted_at && !sameMinute(comment.created_at, comment.updated_at) ? ' · 수정됨' : '';
+    meta.textContent = `${comment.author || 'local'} · ${formatTime(comment.created_at)}${edited}`;
+    const body = document.createElement('p');
+    body.textContent = comment.deleted_at ? '삭제된 메모입니다.' : comment.body;
+    item.appendChild(meta);
+    item.appendChild(body);
+
+    if (!comment.deleted_at) {
+      const actions = document.createElement('div');
+      actions.className = 'comment-actions';
+      actions.appendChild(commentActionButton('Reply', 'reply', comment.id));
+      if (currentUser() && currentUser() === comment.author) {
+        actions.appendChild(commentActionButton('Edit', 'edit', comment.id));
+        actions.appendChild(commentActionButton('Del', 'delete', comment.id));
+      }
+      item.appendChild(actions);
+    }
+
+    if (state.commentEditor && state.commentEditor.id === comment.id) {
+      item.appendChild(makeInlineCommentEditor(state.commentEditor.mode, comment));
+    }
+
+    wrapper.appendChild(item);
+    if (children.length) {
+      const replies = document.createElement('div');
+      replies.className = 'comment-replies';
+      children.forEach((child) => replies.appendChild(renderCommentNode(child)));
+      wrapper.appendChild(replies);
+    }
+    return wrapper;
+  }
+
+  function commentActionButton(label, action, id) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'comment-action-btn';
+    button.dataset.commentAction = action;
+    button.dataset.commentId = id;
+    button.textContent = label;
+    return button;
   }
 
   function renderComments() {
@@ -742,18 +1041,7 @@
       list.appendChild(empty);
       return;
     }
-    state.comments.forEach((comment) => {
-      const item = document.createElement('article');
-      item.className = 'comment-item';
-      const meta = document.createElement('div');
-      meta.className = 'comment-meta';
-      meta.textContent = `${comment.author || 'local'} · ${formatTime(comment.created_at)}`;
-      const body = document.createElement('p');
-      body.textContent = comment.body;
-      item.appendChild(meta);
-      item.appendChild(body);
-      list.appendChild(item);
-    });
+    commentTree(state.comments).forEach((node) => list.appendChild(renderCommentNode(node)));
   }
 
   async function loadComments() {
@@ -761,6 +1049,42 @@
     const data = await apiFetch(`/comments?path=${encodeURIComponent(currentWikiPath())}`);
     state.comments = Array.isArray(data.comments) ? data.comments : [];
     renderComments();
+  }
+
+  async function postComment(body, parentId = null) {
+    const author = requireCurrentUser('전송');
+    if (!author) return false;
+    await apiFetch('/comments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: currentWikiPath(), body, parent_id: parentId, author }),
+    });
+    state.commentEditor = null;
+    await loadComments();
+    return true;
+  }
+
+  async function updateComment(commentId, body) {
+    const author = requireCurrentUser('수정');
+    if (!author) return false;
+    await apiFetch(`/comments/${encodeURIComponent(commentId)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ body, author }),
+    });
+    state.commentEditor = null;
+    await loadComments();
+    return true;
+  }
+
+  async function deleteComment(commentId) {
+    const author = requireCurrentUser('삭제');
+    if (!author) return false;
+    if (!window.confirm('이 메모를 삭제할까요?')) return false;
+    await apiFetch(`/comments/${encodeURIComponent(commentId)}?author=${encodeURIComponent(author)}`, { method: 'DELETE' });
+    state.commentEditor = null;
+    await loadComments();
+    return true;
   }
 
   function createCommentsRail() {
@@ -781,7 +1105,7 @@
       <div class="comment-composer">
         <div class="comment-author">작성자 <strong data-comment-author>${currentUserLabel()}</strong></div>
         <textarea class="wiki-textarea" data-comment-input rows="4" placeholder="페이지별 의견을 남기세요."></textarea>
-        <button type="button" class="btn-wiki primary" data-comment-submit>전송</button>
+        <button type="button" class="btn-wiki primary" data-comment-submit-main>전송</button>
       </div>
     `;
     document.body.appendChild(rail);
@@ -792,26 +1116,69 @@
       button.title = collapsed ? 'Chat 패널 열기' : 'Chat 패널 접기';
       button.setAttribute('aria-label', button.title);
     });
-    rail.querySelector('[data-comment-submit]').addEventListener('click', async () => {
-      const author = requireCurrentUser('전송');
-      if (!author) return;
-      const textarea = rail.querySelector('[data-comment-input]');
-      const body = textarea.value.trim();
-      if (!body) {
-        textarea.focus();
+    rail.addEventListener('click', (event) => {
+      const mainSubmit = event.target.closest('[data-comment-submit-main]');
+      if (mainSubmit) {
+        const textarea = rail.querySelector('[data-comment-input]');
+        const body = textarea.value.trim();
+        if (!body) {
+          textarea.focus();
+          return;
+        }
+        postComment(body)
+          .then((ok) => {
+            if (ok) textarea.value = '';
+          })
+          .catch((err) => window.alert(`메모 저장 실패: ${err.message || err}`));
         return;
       }
-      try {
-        const data = await apiFetch('/comments', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ path: currentWikiPath(), body, author }),
-        });
-        state.comments.push(data.comment);
-        textarea.value = '';
+
+      const inlineSubmit = event.target.closest('[data-comment-submit]');
+      if (inlineSubmit) {
+        const editor = inlineSubmit.closest('.inline-comment-editor');
+        const textarea = editor.querySelector('textarea');
+        const body = textarea.value.trim();
+        if (!body) {
+          textarea.focus();
+          return;
+        }
+        const id = Number(inlineSubmit.dataset.commentId);
+        const task = inlineSubmit.dataset.commentSubmit === 'edit'
+          ? updateComment(id, body)
+          : postComment(body, id);
+        task.catch((err) => window.alert(`메모 처리 실패: ${err.message || err}`));
+        return;
+      }
+
+      const actionButton = event.target.closest('[data-comment-action]');
+      if (!actionButton) return;
+      const id = Number(actionButton.dataset.commentId);
+      const action = actionButton.dataset.commentAction;
+      if (action === 'cancel-editor') {
+        state.commentEditor = null;
         renderComments();
-      } catch (err) {
-        window.alert(`메모 저장 실패: ${err.message || err}`);
+        return;
+      }
+      if (action === 'reply') {
+        const author = requireCurrentUser('답글 작성');
+        if (!author) return;
+        state.commentEditor = { mode: 'reply', id };
+        renderComments();
+        const active = document.querySelector('.inline-comment-editor textarea');
+        if (active) active.focus();
+        return;
+      }
+      if (action === 'edit') {
+        const author = requireCurrentUser('수정');
+        if (!author) return;
+        state.commentEditor = { mode: 'edit', id };
+        renderComments();
+        const active = document.querySelector('.inline-comment-editor textarea');
+        if (active) active.focus();
+        return;
+      }
+      if (action === 'delete') {
+        deleteComment(id).catch((err) => window.alert(`메모 삭제 실패: ${err.message || err}`));
       }
     });
     loadComments().catch(() => {});
@@ -821,12 +1188,13 @@
     if (!isHttp || !isEditablePage()) return;
     try {
       await loadUsers();
-      await markSeen();
+      setupEditableArea();
       await refreshNav();
+      await loadPageMeta();
+      await markSeen();
     } catch (err) {
       console.warn('Wiki shell init failed', err);
     }
-    createToolbar();
     createCommentsRail();
   });
 })();

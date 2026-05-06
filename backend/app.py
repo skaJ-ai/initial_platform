@@ -129,6 +129,12 @@ class WikiCategoryCreate(BaseModel):
 class WikiCommentCreate(BaseModel):
     path: str
     body: str
+    parent_id: int | None = None
+    author: str | None = None
+
+
+class WikiCommentUpdate(BaseModel):
+    body: str
     author: str | None = None
 
 
@@ -393,13 +399,17 @@ def _db() -> Iterator[sqlite3.Connection]:
         CREATE TABLE IF NOT EXISTS wiki_comments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             page_path TEXT NOT NULL,
+            parent_id INTEGER,
             body TEXT NOT NULL,
             author TEXT NOT NULL DEFAULT 'local',
             created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL
+            updated_at TEXT NOT NULL,
+            deleted_at TEXT
         )
         """
     )
+    _ensure_column(conn, "wiki_comments", "parent_id", "parent_id INTEGER")
+    _ensure_column(conn, "wiki_comments", "deleted_at", "deleted_at TEXT")
     conn.execute(
         """
         CREATE TABLE IF NOT EXISTS wiki_page_seen (
@@ -859,7 +869,7 @@ def _page_template(title: str, main_content: str, active: str = "") -> str:
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{safe_title} - HR AX Platform Wiki</title>
 <link rel="icon" href="data:,">
-<link rel="stylesheet" href="/wiki/assets/style.css?v=5">
+<link rel="stylesheet" href="/wiki/assets/style.css?v=6">
 </head>
 <body>
 
@@ -869,7 +879,7 @@ def _page_template(title: str, main_content: str, active: str = "") -> str:
 {main_content.strip()}
 </main>
 
-<script src="/wiki/assets/wiki-editor.js?v=8"></script>
+<script src="/wiki/assets/wiki-editor.js?v=9"></script>
 </body>
 </html>
 """
@@ -1258,10 +1268,71 @@ async def get_wiki_page(path: str) -> dict[str, Any]:
     return _read_editable_content(path)
 
 
+@app.get("/api/wiki/revisions")
+async def list_wiki_revisions(path: str) -> dict[str, Any]:
+    page = _read_editable_content(path)
+    with _db() as conn:
+        rows = conn.execute(
+            """
+            SELECT id, path, action, created_at, updated_by, base_hash
+            FROM wiki_revisions
+            WHERE path = ?
+            ORDER BY id DESC
+            LIMIT 80
+            """,
+            (page["path"],),
+        ).fetchall()
+    return {
+        "current": {
+            "path": page["path"],
+            "title": page["title"],
+            "updated_at": page["updated_at"],
+            "updated_by": page["updated_by"],
+            "has_overlay": page["has_overlay"],
+        },
+        "revisions": [
+            {
+                "id": row["id"],
+                "path": row["path"],
+                "action": row["action"],
+                "created_at": row["created_at"],
+                "updated_by": row["updated_by"],
+                "base_hash": row["base_hash"],
+            }
+            for row in rows
+        ],
+    }
+
+
+@app.get("/api/wiki/revisions/{revision_id}")
+async def get_wiki_revision(revision_id: int) -> dict[str, Any]:
+    with _db() as conn:
+        row = conn.execute(
+            """
+            SELECT id, path, content_html, base_hash, action, created_at, updated_by
+            FROM wiki_revisions
+            WHERE id = ?
+            """,
+            (revision_id,),
+        ).fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="Revision not found")
+    return {
+        "id": row["id"],
+        "path": row["path"],
+        "content": row["content_html"],
+        "base_hash": row["base_hash"],
+        "action": row["action"],
+        "created_at": row["created_at"],
+        "updated_by": row["updated_by"],
+    }
+
+
 @app.put("/api/wiki/page")
 async def update_wiki_page(update: WikiUpdate) -> dict[str, Any]:
     rel = _write_editable_content(update.path, update.content, update.author)
-    return {"ok": True, "path": rel}
+    page = _read_editable_content(rel)
+    return {"ok": True, "path": rel, "updated_at": page["updated_at"], "updated_by": page["updated_by"]}
 
 
 @app.post("/api/wiki/page")
@@ -1341,6 +1412,15 @@ async def update_wiki_page_title(update: WikiPageTitleUpdate) -> dict[str, Any]:
             """,
             (title, now, author, path),
         )
+        content_row = conn.execute("SELECT content_html, base_hash FROM wiki_pages WHERE path = ?", (path,)).fetchone()
+        if content_row:
+            conn.execute(
+                """
+                INSERT INTO wiki_revisions (path, content_html, base_hash, action, created_at, updated_by)
+                VALUES (?, ?, ?, 'rename-title', ?, ?)
+                """,
+                (path, content_row["content_html"], content_row["base_hash"], now, author),
+            )
     return {"ok": True, "path": path, "title": title}
 
 
@@ -1369,7 +1449,7 @@ async def list_wiki_comments(path: str) -> dict[str, Any]:
     with _db() as conn:
         rows = conn.execute(
             """
-            SELECT id, page_path, body, author, created_at, updated_at
+            SELECT id, page_path, parent_id, body, author, created_at, updated_at, deleted_at
             FROM wiki_comments
             WHERE page_path = ?
             ORDER BY id ASC
@@ -1380,10 +1460,12 @@ async def list_wiki_comments(path: str) -> dict[str, Any]:
         {
             "id": row["id"],
             "path": row["page_path"],
+            "parent_id": row["parent_id"],
             "body": row["body"],
             "author": row["author"],
             "created_at": row["created_at"],
             "updated_at": row["updated_at"],
+            "deleted_at": row["deleted_at"],
         }
         for row in rows
     ]
@@ -1399,12 +1481,24 @@ async def create_wiki_comment(comment: WikiCommentCreate) -> dict[str, Any]:
     now = _utc_now()
     with _db() as conn:
         author = _ensure_user(conn, comment.author)
+        parent_id = comment.parent_id
+        if parent_id is not None:
+            parent = conn.execute(
+                """
+                SELECT id
+                FROM wiki_comments
+                WHERE id = ? AND page_path = ? AND deleted_at IS NULL
+                """,
+                (parent_id, page_path),
+            ).fetchone()
+            if not parent:
+                raise HTTPException(status_code=400, detail="Parent comment not found")
         conn.execute(
             """
-            INSERT INTO wiki_comments (page_path, body, author, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO wiki_comments (page_path, parent_id, body, author, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?)
             """,
-            (page_path, body, author, now, now),
+            (page_path, parent_id, body, author, now, now),
         )
         comment_id = conn.execute("SELECT last_insert_rowid() AS id").fetchone()["id"]
     return {
@@ -1412,12 +1506,89 @@ async def create_wiki_comment(comment: WikiCommentCreate) -> dict[str, Any]:
         "comment": {
             "id": comment_id,
             "path": page_path,
+            "parent_id": parent_id,
             "body": body,
             "author": author,
             "created_at": now,
             "updated_at": now,
+            "deleted_at": None,
         },
     }
+
+
+@app.put("/api/wiki/comments/{comment_id}")
+async def update_wiki_comment(comment_id: int, update: WikiCommentUpdate) -> dict[str, Any]:
+    body = _clean_body(update.body, max_length=2000)
+    if not body:
+        raise HTTPException(status_code=400, detail="Comment body is required")
+    author = _normalize_author(update.author)
+    now = _utc_now()
+    with _db() as conn:
+        row = conn.execute(
+            """
+            SELECT id, page_path, parent_id, author, created_at, deleted_at
+            FROM wiki_comments
+            WHERE id = ?
+            """,
+            (comment_id,),
+        ).fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Comment not found")
+        if row["deleted_at"]:
+            raise HTTPException(status_code=400, detail="Deleted comments cannot be edited")
+        if row["author"] != author:
+            raise HTTPException(status_code=403, detail="Only the original author can edit this comment")
+        conn.execute(
+            """
+            UPDATE wiki_comments
+            SET body = ?, updated_at = ?
+            WHERE id = ?
+            """,
+            (body, now, comment_id),
+        )
+    return {
+        "ok": True,
+        "comment": {
+            "id": comment_id,
+            "path": row["page_path"],
+            "parent_id": row["parent_id"],
+            "body": body,
+            "author": row["author"],
+            "created_at": row["created_at"],
+            "updated_at": now,
+            "deleted_at": None,
+        },
+    }
+
+
+@app.delete("/api/wiki/comments/{comment_id}")
+async def delete_wiki_comment(comment_id: int, author: str | None = None) -> dict[str, Any]:
+    user = _normalize_author(author)
+    now = _utc_now()
+    with _db() as conn:
+        row = conn.execute(
+            """
+            SELECT id, author, deleted_at
+            FROM wiki_comments
+            WHERE id = ?
+            """,
+            (comment_id,),
+        ).fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Comment not found")
+        if row["deleted_at"]:
+            return {"ok": True, "id": comment_id, "deleted_at": row["deleted_at"]}
+        if row["author"] != user:
+            raise HTTPException(status_code=403, detail="Only the original author can delete this comment")
+        conn.execute(
+            """
+            UPDATE wiki_comments
+            SET deleted_at = ?, updated_at = ?
+            WHERE id = ?
+            """,
+            (now, now, comment_id),
+        )
+    return {"ok": True, "id": comment_id, "deleted_at": now}
 
 
 @app.post("/api/wiki/seen")
