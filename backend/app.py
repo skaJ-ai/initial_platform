@@ -869,7 +869,7 @@ def _page_template(title: str, main_content: str, active: str = "") -> str:
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{safe_title} - HR AX Platform Wiki</title>
 <link rel="icon" href="data:,">
-<link rel="stylesheet" href="/wiki/assets/style.css?v=8">
+<link rel="stylesheet" href="/wiki/assets/style.css?v=9">
 </head>
 <body>
 
@@ -879,7 +879,7 @@ def _page_template(title: str, main_content: str, active: str = "") -> str:
 {main_content.strip()}
 </main>
 
-<script src="/wiki/assets/wiki-editor.js?v=11"></script>
+<script src="/wiki/assets/wiki-editor.js?v=12"></script>
 </body>
 </html>
 """

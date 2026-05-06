@@ -343,6 +343,84 @@ aside.sidebar .mvp-entry {
   gap: 6px;
 }
 
+.author-picker {
+  position: relative;
+  min-width: 0;
+}
+
+.author-picker-button {
+  display: flex;
+  width: 100%;
+  min-height: 34px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-elevated);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.3;
+  padding: 6px 10px;
+}
+
+.author-picker-button:hover,
+.author-picker-button[aria-expanded="true"] {
+  border-color: rgba(15, 76, 129, 0.34);
+  background: var(--color-bg-sunken);
+  color: var(--color-text);
+}
+
+.author-picker-caret {
+  flex-shrink: 0;
+  color: var(--color-text-tertiary);
+  font-size: 10px;
+}
+
+.author-picker-menu {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% + 8px);
+  z-index: 180;
+  display: flex;
+  max-height: min(360px, 48vh);
+  flex-direction: column;
+  overflow-y: auto;
+  border: 1px solid rgba(15, 76, 129, 0.16);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-elevated);
+  box-shadow: var(--shadow-3);
+  padding: 6px;
+}
+
+.author-picker-menu[hidden] {
+  display: none !important;
+}
+
+.author-option {
+  width: 100%;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 700;
+  padding: 8px 9px;
+  text-align: left;
+}
+
+.author-option:hover,
+.author-option[data-selected="true"] {
+  background: var(--color-accent-light);
+  color: var(--color-accent);
+}
+
 .manage-section {
   display: flex;
   flex-direction: column;
@@ -1281,6 +1359,17 @@ main.content a {
 .comment-action-btn:hover {
   color: var(--color-accent);
   text-decoration: underline;
+}
+
+.comment-action-btn[aria-disabled="true"] {
+  color: var(--color-text-tertiary);
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.comment-action-btn[aria-disabled="true"]:hover {
+  color: var(--color-text-tertiary);
+  text-decoration: none;
 }
 
 .inline-comment-editor {

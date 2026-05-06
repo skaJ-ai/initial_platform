@@ -76,8 +76,8 @@
     const user = currentUser();
     if (user) return user;
     window.alert(`${actionLabel} 전에 작성자를 선택하세요.`);
-    const select = document.querySelector('[data-user-select]');
-    if (select) select.focus();
+    const picker = document.querySelector('[data-author-toggle]');
+    if (picker) picker.focus();
     return '';
   }
 
@@ -159,25 +159,45 @@
     await markSeen();
   }
 
-  function populateUserSelect(select) {
-    if (!select) return;
-    select.innerHTML = '';
-    const placeholder = document.createElement('option');
-    placeholder.value = '';
+  function closeAuthorPicker() {
+    const picker = state.manageEl && state.manageEl.querySelector('[data-author-picker]');
+    if (!picker) return;
+    const toggle = picker.querySelector('[data-author-toggle]');
+    const menu = picker.querySelector('[data-author-options]');
+    if (toggle) toggle.setAttribute('aria-expanded', 'false');
+    if (menu) menu.hidden = true;
+  }
+
+  function updateAuthorPicker() {
+    const picker = state.manageEl && state.manageEl.querySelector('[data-author-picker]');
+    if (!picker) return;
+    const label = picker.querySelector('[data-author-label]');
+    const menu = picker.querySelector('[data-author-options]');
+    if (label) label.textContent = currentUserLabel();
+    if (!menu) return;
+    menu.innerHTML = '';
+
+    const placeholder = document.createElement('button');
+    placeholder.type = 'button';
+    placeholder.className = 'author-option';
+    placeholder.dataset.authorValue = '';
+    placeholder.dataset.selected = currentUser() ? 'false' : 'true';
     placeholder.textContent = '선택하기';
-    placeholder.selected = !state.currentUser;
-    select.appendChild(placeholder);
+    menu.appendChild(placeholder);
+
     state.users.forEach((user) => {
-      const option = document.createElement('option');
-      option.value = user.name;
+      const option = document.createElement('button');
+      option.type = 'button';
+      option.className = 'author-option';
+      option.dataset.authorValue = user.name;
+      option.dataset.selected = user.name === currentUser() ? 'true' : 'false';
       option.textContent = user.name;
-      option.selected = user.name === state.currentUser;
-      select.appendChild(option);
+      menu.appendChild(option);
     });
   }
 
   function updateManageUserSelects() {
-    document.querySelectorAll('[data-user-select]').forEach((select) => populateUserSelect(select));
+    updateAuthorPicker();
   }
 
   function updateNewPageCategories(categories) {
@@ -254,15 +274,8 @@
   }
 
   function initManageEvents(manage) {
-    manage.addEventListener('change', async (event) => {
-      const target = event.target;
-      if (target.matches('[data-user-select]')) {
-        state.currentUser = target.value;
-        updateCommentAuthorLabel();
-        renderComments();
-        await markSeen();
-        return;
-      }
+    document.addEventListener('click', (event) => {
+      if (!manage.contains(event.target)) closeAuthorPicker();
     });
 
     manage.addEventListener('input', (event) => {
@@ -278,6 +291,28 @@
     });
 
     manage.addEventListener('click', (event) => {
+      const toggle = event.target.closest('[data-author-toggle]');
+      if (toggle) {
+        const picker = toggle.closest('[data-author-picker]');
+        const menu = picker && picker.querySelector('[data-author-options]');
+        if (!menu) return;
+        const willOpen = menu.hidden;
+        menu.hidden = !willOpen;
+        toggle.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+        return;
+      }
+
+      const authorOption = event.target.closest('[data-author-value]');
+      if (authorOption) {
+        state.currentUser = authorOption.dataset.authorValue || '';
+        updateManageUserSelects();
+        updateCommentAuthorLabel();
+        renderComments();
+        closeAuthorPicker();
+        markSeen().catch(() => {});
+        return;
+      }
+
       const button = event.target.closest('[data-action], [data-user-add], [data-create-page], [data-cancel-page]');
       if (!button) return;
       const action = button.dataset.action;
@@ -316,9 +351,15 @@
       manage.innerHTML = `
         <div class="sidebar-manage-title">Wiki Manage</div>
         <div class="manage-section author-section">
-          <label class="manage-label" for="wiki-author-select">작성자</label>
+          <label class="manage-label" id="wiki-author-label">작성자</label>
           <div class="sidebar-author-row">
-            <select id="wiki-author-select" class="wiki-select" data-user-select aria-label="작성자"></select>
+            <div class="author-picker" data-author-picker>
+              <button type="button" class="author-picker-button" data-author-toggle aria-haspopup="listbox" aria-expanded="false" aria-labelledby="wiki-author-label">
+                <span data-author-label>선택하기</span>
+                <span class="author-picker-caret" aria-hidden="true">▴</span>
+              </button>
+              <div class="author-picker-menu" data-author-options role="listbox" hidden></div>
+            </div>
             <button type="button" class="btn-wiki icon" data-user-add title="사용자 추가">+</button>
           </div>
         </div>
@@ -1075,10 +1116,15 @@
       const actions = document.createElement('div');
       actions.className = 'comment-actions';
       actions.appendChild(commentActionButton('Reply', 'reply', comment.id));
-      if (currentUser() && currentUser() === comment.author) {
-        actions.appendChild(commentActionButton('Edit', 'edit', comment.id));
-        actions.appendChild(commentActionButton('Del', 'delete', comment.id));
-      }
+      const canModify = currentUser() && currentUser() === comment.author;
+      actions.appendChild(commentActionButton('Edit', 'edit', comment.id, {
+        disabled: !canModify,
+        title: canModify ? '메모 수정' : '원 작성자만 수정할 수 있습니다.',
+      }));
+      actions.appendChild(commentActionButton('Del', 'delete', comment.id, {
+        disabled: !canModify,
+        title: canModify ? '메모 삭제' : '원 작성자만 삭제할 수 있습니다.',
+      }));
       item.appendChild(actions);
     }
 
@@ -1096,13 +1142,18 @@
     return wrapper;
   }
 
-  function commentActionButton(label, action, id) {
+  function commentActionButton(label, action, id, options = {}) {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'comment-action-btn';
     button.dataset.commentAction = action;
     button.dataset.commentId = id;
     button.textContent = label;
+    if (options.title) button.title = options.title;
+    if (options.disabled) {
+      button.dataset.disabled = 'true';
+      button.setAttribute('aria-disabled', 'true');
+    }
     return button;
   }
 
@@ -1228,6 +1279,10 @@
 
       const actionButton = event.target.closest('[data-comment-action]');
       if (!actionButton) return;
+      if (actionButton.dataset.disabled === 'true') {
+        window.alert(actionButton.title || '원 작성자만 수정/삭제할 수 있습니다.');
+        return;
+      }
       const id = Number(actionButton.dataset.commentId);
       const action = actionButton.dataset.commentAction;
       if (action === 'cancel-editor') {
