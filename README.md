@@ -23,11 +23,13 @@ Wiki 편집 내용은 Git 파일에 직접 저장하지 않고 SQLite DB에 over
 기본 Docker Compose 설정:
 
 ```text
-WIKI_DATA_DIR=C:/dev/HR-AX-WIKI-DATA
+wiki data bind mount=./wiki-data
 WIKI_DB_PATH=/app/data/wiki.sqlite
 ```
 
-즉, 사내망에서 Wiki를 수정해도 `C:\dev\initial_platform` Git worktree가 더러워지지 않습니다. 사외망에서 새 코드를 push한 뒤 사내망에서 `git pull` 또는 강제 동기화를 해도, 사내 Wiki 수정본은 `C:\dev\HR-AX-WIKI-DATA\wiki.sqlite`에 남습니다.
+`docker-compose.yml`은 Windows/Ubuntu 경로 차이를 피하기 위해 OS 절대경로가 아니라 repo 기준 상대경로 bind mount를 사용합니다. `wiki-data/`는 `.gitignore` 대상이므로 Git pull/commit과 충돌하지 않습니다.
+
+Ubuntu 서버의 repo 경로가 `~/initial_platform`이면 실제 DB 경로는 `~/initial_platform/wiki-data/wiki.sqlite`입니다. 즉, 사내망에서 Wiki를 수정해도 Git tracked 파일은 더러워지지 않습니다. 사외망에서 새 코드를 push한 뒤 사내망에서 `git pull` 또는 강제 동기화를 해도, 사내 Wiki 수정본은 repo 하위 `wiki-data/wiki.sqlite`에 남습니다.
 
 저장 정책:
 
