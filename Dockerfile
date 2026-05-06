@@ -13,6 +13,8 @@ ENV NO_PROXY=${NO_PROXY}
 
 WORKDIR /app
 
+RUN mkdir -p /app/data
+
 COPY backend/requirements.txt /app/backend/requirements.txt
 RUN pip install --no-cache-dir -r /app/backend/requirements.txt \
     --proxy ${HTTP_PROXY} \
@@ -27,6 +29,7 @@ RUN python -m compileall /app/backend
 
 EXPOSE 26000
 ENV PORT=26000
+ENV WIKI_DB_PATH=/app/data/wiki.sqlite
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=5 \
   CMD python -c "import os,sys,urllib.request; port=os.getenv('PORT','26000'); url=f'http://127.0.0.1:{port}/api/health'; sys.exit(0 if urllib.request.urlopen(url, timeout=3).getcode()==200 else 1)"

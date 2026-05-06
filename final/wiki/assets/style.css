@@ -257,8 +257,19 @@ aside.sidebar nav a.active {
 /* Main */
 main.content {
   width: 100%;
-  max-width: 1040px;
-  padding: 48px 64px 80px;
+  max-width: 1280px;
+  padding: 52px 72px 88px;
+}
+
+main.content > h1,
+main.content > h2,
+main.content > h3,
+main.content > h4,
+main.content > p,
+main.content > ul,
+main.content > ol,
+main.content > blockquote {
+  max-width: 84ch;
 }
 
 main.content h1 {
@@ -412,6 +423,22 @@ main.content blockquote {
   box-shadow: var(--shadow-1);
   color: var(--color-text-secondary);
 }
+
+blockquote.callout.cyan { border-left-color: var(--color-teal); }
+blockquote.callout.purple { border-left-color: var(--color-info); }
+blockquote.callout.amber { border-left-color: var(--color-warning); }
+blockquote.callout.green { border-left-color: var(--color-success); }
+blockquote.callout.rose { border-left-color: var(--color-error); }
+
+.text-tone {
+  font-weight: 750;
+}
+
+.text-tone.cyan { color: var(--color-teal); }
+.text-tone.purple { color: var(--color-info); }
+.text-tone.amber { color: var(--color-warning); }
+.text-tone.green { color: var(--color-success); }
+.text-tone.rose { color: var(--color-error); }
 
 /* Cards */
 .cards {
@@ -704,8 +731,9 @@ main.content a {
   bottom: 18px;
   z-index: 100;
   display: flex;
-  max-width: min(620px, calc(100vw - 36px));
+  max-width: min(980px, calc(100vw - 36px));
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
   border: 1px solid rgba(15, 76, 129, 0.14);
   border-radius: var(--radius-lg);
@@ -713,6 +741,29 @@ main.content a {
   box-shadow: var(--shadow-3);
   backdrop-filter: blur(12px);
   padding: 10px;
+}
+
+.wiki-toolbar [hidden] {
+  display: none !important;
+}
+
+.wiki-select {
+  min-height: 34px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-elevated);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 700;
+  padding: 6px 10px;
+}
+
+.wiki-select:hover {
+  border-color: var(--color-border-strong);
+  background: var(--color-bg-sunken);
+  color: var(--color-text);
 }
 
 .btn-wiki {
