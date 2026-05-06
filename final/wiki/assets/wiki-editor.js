@@ -251,6 +251,7 @@
   function syncEditControls() {
     const bar = state.pageBar;
     if (!bar) return;
+    bar.classList.toggle('editing', state.edit.active);
     bar.querySelector('[data-page-action="edit"]').hidden = state.edit.active;
     bar.querySelector('[data-page-action="save"]').hidden = !state.edit.active;
     bar.querySelector('[data-page-action="cancel"]').hidden = !state.edit.active;
@@ -783,13 +784,13 @@
         <span class="page-meta-status" data-page-meta>No local edits yet</span>
         <span class="wiki-status page-status" data-page-status></span>
       </div>
-      <div class="page-action-icons" aria-label="Page actions">
-        <button type="button" class="btn-wiki icon page-icon-btn" data-page-action="edit" title="Edit page" aria-label="Edit page">✎</button>
-        <button type="button" class="btn-wiki icon page-icon-btn primary" data-page-action="save" title="Save changes" aria-label="Save changes" hidden>✓</button>
-        <button type="button" class="btn-wiki icon page-icon-btn" data-page-action="cancel" title="Cancel edit" aria-label="Cancel edit" hidden>×</button>
-        <button type="button" class="btn-wiki icon page-icon-btn" data-page-action="history" title="View history" aria-label="View history">↺</button>
+      <div class="page-action-buttons" aria-label="Page actions">
+        <button type="button" class="btn-wiki page-action-btn" data-page-action="edit" title="Edit page">Edit page</button>
+        <button type="button" class="btn-wiki primary page-action-btn" data-page-action="save" title="Save changes" hidden>Save</button>
+        <button type="button" class="btn-wiki page-action-btn" data-page-action="cancel" title="Cancel edit" hidden>Cancel</button>
+        <button type="button" class="btn-wiki page-action-btn subtle" data-page-action="history" title="View history">History</button>
       </div>
-      <div class="edit-tools-panel page-edit-tools" data-edit-tools hidden>
+      <div class="page-edit-tools" data-edit-tools hidden>
         <select class="wiki-select" data-page-action="style" aria-label="Text style">
           <option value="p">본문</option>
           <option value="h2">제목</option>
@@ -797,14 +798,19 @@
           <option value="h4">내용 제목</option>
           <option value="dim">보조 설명</option>
         </select>
-        <button type="button" class="btn-wiki" data-page-action="bold" data-edit-tool>Bold</button>
-        <button type="button" class="btn-wiki" data-page-action="bullet" data-edit-tool>List</button>
-        <button type="button" class="btn-wiki" data-page-action="numbered" data-edit-tool>1. List</button>
-        <button type="button" class="btn-wiki" data-page-action="table" data-edit-tool>Table</button>
-        <button type="button" class="btn-wiki" data-page-action="cards2" data-edit-tool>2 Cards</button>
-        <button type="button" class="btn-wiki" data-page-action="cards3" data-edit-tool>3 Cards</button>
-        <button type="button" class="btn-wiki" data-page-action="callout" data-edit-tool>Callout</button>
-        <button type="button" class="btn-wiki" data-page-action="faq" data-edit-tool>FAQ</button>
+        <button type="button" class="btn-wiki tool-btn" data-page-action="bold" data-edit-tool title="Bold">B</button>
+        <button type="button" class="btn-wiki tool-btn" data-page-action="bullet" data-edit-tool title="Bullet list">List</button>
+        <button type="button" class="btn-wiki tool-btn" data-page-action="numbered" data-edit-tool title="Numbered list">1. List</button>
+        <div class="insert-menu" data-insert-menu>
+          <button type="button" class="btn-wiki insert-toggle" data-insert-toggle aria-expanded="false">Insert ▾</button>
+          <div class="insert-menu-popover" data-insert-options hidden>
+            <button type="button" data-page-action="table" data-edit-tool>Table</button>
+            <button type="button" data-page-action="cards2" data-edit-tool>2 Cards</button>
+            <button type="button" data-page-action="cards3" data-edit-tool>3 Cards</button>
+            <button type="button" data-page-action="callout" data-edit-tool>Callout</button>
+            <button type="button" data-page-action="faq" data-edit-tool>FAQ</button>
+          </div>
+        </div>
         <select class="wiki-select" data-page-action="tone" aria-label="Tone">
           <option value="">색상</option>
           <option value="cyan">정보</option>
@@ -823,6 +829,15 @@
     }
     state.pageBar = bar;
     return bar;
+  }
+
+  function closeInsertMenu(bar = state.pageBar) {
+    const menu = bar && bar.querySelector('[data-insert-menu]');
+    if (!menu) return;
+    const toggle = menu.querySelector('[data-insert-toggle]');
+    const options = menu.querySelector('[data-insert-options]');
+    if (toggle) toggle.setAttribute('aria-expanded', 'false');
+    if (options) options.hidden = true;
   }
 
   function initPageActionBarEvents(bar) {
@@ -846,6 +861,21 @@
       }
     });
     bar.addEventListener('click', (event) => {
+      const insertToggle = event.target.closest('[data-insert-toggle]');
+      if (insertToggle) {
+        const menu = insertToggle.closest('[data-insert-menu]');
+        const options = menu && menu.querySelector('[data-insert-options]');
+        if (!options) return;
+        const willOpen = options.hidden;
+        options.hidden = !willOpen;
+        insertToggle.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+        return;
+      }
+
+      if (!event.target.closest('[data-insert-menu]')) {
+        closeInsertMenu(bar);
+      }
+
       const button = event.target.closest('[data-page-action]');
       if (!button) return;
       const action = button.dataset.pageAction;
@@ -985,6 +1015,7 @@
     if (action === 'cards3') insertCards(area, 3);
     if (action === 'callout') insertCallout(area);
     if (action === 'faq') insertFaq(area);
+    closeInsertMenu();
     area.focus();
   }
 
