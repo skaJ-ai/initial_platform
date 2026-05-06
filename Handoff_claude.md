@@ -204,23 +204,100 @@
 - 첫 단락: 위 lead 카피 사용.
 - "Wiki 저장소" 헤더는 "Concept 저장소"로 변경. 본문에서 "Wiki" 단어를 "Concept"으로 교체하되, **DB 컬럼명/경로명(`wiki-data`, `wiki.sqlite`, `WIKI_DB_PATH`)은 그대로** — 코드 호환성 유지.
 
-### 2.6 Backend 동기화
+### 2.6 Backend 동기화 + DB 마이그레이션 (사내망 운영 전제)
+
+⚠️ **운영 전제**: 본 리포는 사외망에서 코드 작업 → push → 사내망에서 `git pull` → 컨테이너 재기동만으로 반영되어야 한다. 사내망에서는 **절대 push가 불가능**하다. 그리고 사내망에는 이미 운영자가 위키 에디터로 수정·추가한 SQLite overlay 데이터가 존재한다. 아래 마이그레이션 로직은 그 전제 하에서 작성한다.
+
+#### 저장 모델 재확인 (다음 에이전트 숙지 필수)
+
+- **사이드바는 DB-driven**: HTML 파일에 박힌 사이드바는 정적 fallback일 뿐, 실제로는 `_wiki_sidebar()`가 SQLite의 `wiki_nav_categories` / `wiki_nav_items`에서 읽어 렌더링한다.
+- **`DEFAULT_WIKI_NAV`** (`backend/app.py:43`)는 시드 정의. 시작 시 `_ensure_wiki_reference_data()`가 `INSERT OR IGNORE` + `UPDATE WHERE is_seed=1` 패턴으로 DB에 반영한다.
+- **사용자가 만든 카테고리/페이지는 `is_seed=0`** — 시드 갱신 로직이 절대 건드리면 안 된다.
+- `wiki-data/` 는 `.gitignore` + 상대경로 bind mount → git 작업과 충돌 없음.
+
+#### 핵심 함정 — 시드 카테고리 ID 변경 시 좀비 발생
+
+현재 `DEFAULT_WIKI_NAV` ID: `platform / concepts / reference / documents`.
+새 IA의 ID: `pillars / shared-language / working-notes / documents`.
+
+`INSERT OR IGNORE`는 **새 ID 4개를 추가**할 뿐 **옛 ID 3개(`platform`, `concepts`, `reference`)를 삭제하지 않는다.** 그대로 두면 사이드바에 옛 카테고리 + 새 카테고리가 둘 다 노출되는 좀비 상태가 된다.
+
+#### 작업 항목
 
 `backend/app.py`:
-- `_ensure_wiki_reference_data()` (line ~236): 카테고리 시드를 새 IA(`Pillars` / `Shared Language` / `Working Notes` / `Documents`)로 변경. **반드시 INSERT OR IGNORE 패턴 유지** — 기존 사용자 데이터를 덮어쓰지 말 것.
-- `_wiki_sidebar()` (line ~818): 위 HTML 시드와 정확히 동일한 카테고리/링크 출력.
-- `_page_template()` (line ~863): "Wiki" 단어를 "Concept" 정합으로.
-- `open-questions.html`을 시드 페이지 목록에 등록 (`_seed_content_for_path` 등 시드 인식 경로 확인).
+
+1. **`DEFAULT_WIKI_NAV` 교체** (line ~43): 새 IA(`pillars` / `shared-language` / `working-notes` / `documents`) 4개 카테고리. 아이템 분배는 §2.2의 사이드바 HTML과 정확히 일치:
+   - `pillars`: data-governance, harness-engineering
+   - `shared-language`: terminology, faq
+   - `working-notes`: scenarios, open-questions, next-actions
+   - `documents`: docs/ppt, docs/one-pager
+
+2. **`_ensure_wiki_reference_data()` 맨 앞에 시드 정리 블록 추가** (line ~236, INSERT 루프 시작 직전):
+
+   ```python
+   # 시드 정리: 현 DEFAULT_WIKI_NAV에 없는 옛 시드 카테고리 제거.
+   # 사용자가 만든 카테고리(is_seed=0)는 절대 건드리지 않음.
+   current_ids = tuple(c["id"] for c in DEFAULT_WIKI_NAV)
+   placeholders = ",".join("?" * len(current_ids))
+   conn.execute(
+       f"DELETE FROM wiki_nav_categories "
+       f"WHERE is_seed = 1 AND id NOT IN ({placeholders})",
+       current_ids,
+   )
+   # 시드 아이템 중 사라진 것(예: 구조 개편으로 빠진 path)도 정리.
+   current_paths = tuple(
+       item["path"] for c in DEFAULT_WIKI_NAV for item in c["items"]
+   )
+   ph_paths = ",".join("?" * len(current_paths))
+   conn.execute(
+       f"DELETE FROM wiki_nav_items "
+       f"WHERE is_seed = 1 AND path NOT IN ({ph_paths})",
+       current_paths,
+   )
+   ```
+
+   - 옛 시드 아이템(`path`)은 새 정의에 그대로 있으면 기존 `UPDATE...SET category_id=?` (line ~283)에서 새 카테고리로 자동 재배치됨 — 별도 처리 불필요.
+   - **사용자가 추가한 카테고리/아이템(`is_seed=0`)은 WHERE 절에서 제외되므로 보존됨.**
+
+3. **`_wiki_sidebar()`** (line ~818): §2.2 HTML 시드와 정확히 동일한 카테고리/링크/순서 출력. `(preview)` 부기 포함.
+
+4. **`_page_template()`** (line ~863): 타이틀에서 "Wiki" → "Concept & MVP Sharing" 정합.
+
+5. **`open-questions.html` 시드 인식**: `_seed_content_for_path` 등 시드 인식 경로에 등록되도록 확인. `DEFAULT_WIKI_NAV`의 working-notes에 `path: "open-questions.html"`로 들어가 있으면 일반적으로 자동 인식되지만, `_seed_content_for_path`가 화이트리스트 형태라면 명시 추가 필요.
+
+6. **공통 머리말의 FastAPI title** (`app = FastAPI(title="HR AX Platform Wiki", ...)`, line ~95): "HR AX Platform — Concept & MVP Sharing"으로 변경.
+
+#### 사내망 운영자 액션 가이드 (README에도 추가 권장)
+
+```text
+1. git pull
+2. docker compose up --build -d   ← 백엔드 코드 변경 반영하려면 재빌드 필수
+3. 새 사이드바 IA 자동 적용. 옛 카테고리 좀비 없음(시드 정리 블록 동작).
+4. 사용자가 추가한 페이지/카테고리는 그대로 유지됨.
+5. 사용자가 본문을 직접 편집한 페이지(예: index.html, overview.html)는
+   SQLite overlay가 우선이라 새 lead 카피가 안 보일 수 있음.
+   새 카피를 보려면 위키 에디터에서 본문을 비우고 저장 → 파일 fallback 작동.
+6. wiki-data/ 디렉토리 절대 삭제 금지. `git clean -fdx` 같은 광범위
+   청소 명령 금지.
+```
+
+이 안내는 README의 "Wiki 저장소" → "Concept 저장소" 섹션 끝에 코드 블록으로 박는다.
 
 ### 2.7 Phase 1 Acceptance Criteria
 
+기능:
 - [ ] `docker compose up --build` 직후 모든 페이지가 새 IA의 사이드바를 보여준다.
-- [ ] 모든 페이지의 사이드바가 **바이트 단위로 동일** (`Overview` 활성 표시 외에는 차이 없음).
+- [ ] 모든 페이지의 사이드바가 **바이트 단위로 동일** (`active` 표시 외에는 차이 없음).
 - [ ] `MVP Demo (preview)` 라벨이 사이드바 맨 밑에 보이고 클릭하면 `/mvp/`로 이동한다.
 - [ ] `/wiki/open-questions.html`이 5행 표를 시드로 보여준다.
-- [ ] 옛 카테고리 라벨 (`Core Pillars`, `Concepts`, `Reference`) 이 grep으로 0건.
+- [ ] 옛 카테고리 라벨 (`Core Pillars`, `Concepts`, `Reference`) grep으로 0건.
 - [ ] `<title>`이 모두 `... — HR AX Platform — Concept & MVP Sharing` 또는 `HR AX Platform — Concept & MVP Sharing` 패턴.
-- [ ] 빈 `wiki-data/wiki.sqlite` 상태에서 첫 부팅, 그리고 기존 `wiki-data` 보존 부팅 두 경우 모두 정상 동작.
+
+마이그레이션 (사내망 시뮬레이션):
+- [ ] **시나리오 A**: 빈 `wiki-data/` 첫 부팅 → 새 IA만 정상 시드.
+- [ ] **시나리오 B**: 옛 IA의 시드 데이터가 들어있는 SQLite로 부팅 → 옛 카테고리(`platform`/`concepts`/`reference`) 시드 레코드 0건, 새 카테고리(`pillars`/`shared-language`/`working-notes`) 시드 레코드 정확히 존재. 사이드바도 새 IA만 노출.
+- [ ] **시나리오 C**: 옛 시드 + 사용자가 추가한 카테고리·페이지(`is_seed=0`) 가 섞인 SQLite로 부팅 → 사용자 데이터 100% 보존, 옛 시드만 사라짐.
+- [ ] **시나리오 D**: 사용자가 `index.html` 본문을 overlay에 저장한 상태로 부팅 → overlay 본문이 그대로 보임 (새 lead 카피는 안 보이는 것이 정상). 위키 에디터에서 본문을 비우고 저장하면 새 카피로 fallback.
 
 ---
 
