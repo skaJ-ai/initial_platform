@@ -575,6 +575,74 @@ main.content h1 .badge {
   line-height: 1.4;
 }
 
+.wiki-page-actions {
+  display: flex;
+  max-width: 96ch;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  margin: 2px 0 26px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.page-action-meta {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px 10px;
+}
+
+.wiki-page-actions .page-meta-status {
+  background: transparent;
+  color: var(--color-text-tertiary);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+  padding: 0;
+}
+
+.wiki-page-actions .page-meta-status[data-tone="success"] {
+  background: transparent;
+  color: var(--color-success);
+}
+
+.wiki-page-actions .page-meta-status[data-tone="warning"] {
+  background: transparent;
+  color: var(--color-warning);
+}
+
+.page-action-icons {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+}
+
+.page-icon-btn {
+  width: 32px;
+  min-height: 32px;
+  border-radius: var(--radius-sm);
+  font-size: 15px;
+  line-height: 1;
+}
+
+.page-icon-btn.primary {
+  border-color: transparent;
+  background: var(--color-accent);
+  color: var(--color-text-inverse);
+}
+
+.page-status {
+  max-width: 360px;
+}
+
+.page-edit-tools {
+  flex: 1 0 100%;
+}
+
 main.content .lead {
   margin-bottom: 42px;
   padding-bottom: 24px;

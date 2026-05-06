@@ -9,9 +9,11 @@
     comments: [],
     pageMeta: null,
     manageEl: null,
+    pageBar: null,
     commentEditor: null,
     edit: {
       area: null,
+      titleEl: null,
       active: false,
       original: '',
     },
@@ -196,15 +198,19 @@
     }
   }
 
-  function setManageStatus(message, tone) {
-    const status = state.manageEl && state.manageEl.querySelector('[data-wiki-status]');
+  function setPageStatus(message, tone) {
+    const status = state.pageBar && state.pageBar.querySelector('[data-page-status]');
     if (!status) return;
     status.textContent = message || '';
     status.dataset.tone = tone || '';
   }
 
-  function updateManagePageMeta() {
-    const meta = state.manageEl && state.manageEl.querySelector('[data-page-meta]');
+  function setManageStatus(message, tone) {
+    setPageStatus(message, tone);
+  }
+
+  function updatePageMeta() {
+    const meta = state.pageBar && state.pageBar.querySelector('[data-page-meta]');
     if (!meta) return;
     const page = state.pageMeta;
     if (!page || !page.has_overlay) {
@@ -218,13 +224,17 @@
     meta.dataset.tone = page.upstream_changed ? 'warning' : 'success';
   }
 
+  function updateManagePageMeta() {
+    updatePageMeta();
+  }
+
   function syncEditControls() {
-    const manage = state.manageEl;
-    if (!manage) return;
-    manage.querySelector('[data-action="edit"]').hidden = state.edit.active;
-    manage.querySelector('[data-action="save"]').hidden = !state.edit.active;
-    manage.querySelector('[data-action="cancel"]').hidden = !state.edit.active;
-    const tools = manage.querySelector('[data-edit-tools]');
+    const bar = state.pageBar;
+    if (!bar) return;
+    bar.querySelector('[data-page-action="edit"]').hidden = state.edit.active;
+    bar.querySelector('[data-page-action="save"]').hidden = !state.edit.active;
+    bar.querySelector('[data-page-action="cancel"]').hidden = !state.edit.active;
+    const tools = bar.querySelector('[data-edit-tools]');
     if (tools) tools.hidden = !state.edit.active;
   }
 
@@ -244,12 +254,6 @@
   }
 
   function initManageEvents(manage) {
-    manage.addEventListener('mousedown', (event) => {
-      if (event.target.closest('button[data-edit-tool]')) {
-        event.preventDefault();
-      }
-    });
-
     manage.addEventListener('change', async (event) => {
       const target = event.target;
       if (target.matches('[data-user-select]')) {
@@ -258,15 +262,6 @@
         renderComments();
         await markSeen();
         return;
-      }
-      if (target.matches('[data-action="style"]')) {
-        applySemanticStyle(editArea(), target.value);
-        target.value = 'p';
-        return;
-      }
-      if (target.matches('[data-action="tone"]')) {
-        applyTone(editArea(), target.value);
-        target.value = '';
       }
     });
 
@@ -309,14 +304,6 @@
       await createPageFromPanel();
       return;
     }
-    if (button.hasAttribute('data-edit-tool')) {
-      handleEditTool(action);
-      return;
-    }
-    if (action === 'edit') startEdit();
-    if (action === 'save') await saveEdit();
-    if (action === 'cancel') cancelEdit();
-    if (action === 'history') await openHistory();
     if (action === 'sidebar-page') toggleCreatePanel();
     if (action === 'sidebar-category') await createCategoryFromPrompt();
   }
@@ -333,42 +320,6 @@
           <div class="sidebar-author-row">
             <select id="wiki-author-select" class="wiki-select" data-user-select aria-label="작성자"></select>
             <button type="button" class="btn-wiki icon" data-user-add title="사용자 추가">+</button>
-          </div>
-        </div>
-        <div class="manage-section page-actions-section">
-          <div class="manage-section-title">Page Actions</div>
-          <div class="page-meta-status" data-page-meta>No local edits yet</div>
-          <div class="page-action-row">
-            <button type="button" class="btn-wiki sidebar-btn" data-action="edit">Edit</button>
-            <button type="button" class="btn-wiki primary sidebar-btn" data-action="save" hidden>Save</button>
-            <button type="button" class="btn-wiki sidebar-btn" data-action="cancel" hidden>Cancel</button>
-            <button type="button" class="btn-wiki sidebar-btn" data-action="history">History</button>
-          </div>
-          <div class="wiki-status manage-status" data-wiki-status></div>
-          <div class="edit-tools-panel" data-edit-tools hidden>
-            <select class="wiki-select" data-action="style" aria-label="Text style">
-              <option value="p">본문</option>
-              <option value="h2">제목</option>
-              <option value="h3">소제목</option>
-              <option value="h4">내용 제목</option>
-              <option value="dim">보조 설명</option>
-            </select>
-            <button type="button" class="btn-wiki" data-action="bold" data-edit-tool>Bold</button>
-            <button type="button" class="btn-wiki" data-action="bullet" data-edit-tool>List</button>
-            <button type="button" class="btn-wiki" data-action="numbered" data-edit-tool>1. List</button>
-            <button type="button" class="btn-wiki" data-action="table" data-edit-tool>Table</button>
-            <button type="button" class="btn-wiki" data-action="cards2" data-edit-tool>2 Cards</button>
-            <button type="button" class="btn-wiki" data-action="cards3" data-edit-tool>3 Cards</button>
-            <button type="button" class="btn-wiki" data-action="callout" data-edit-tool>Callout</button>
-            <button type="button" class="btn-wiki" data-action="faq" data-edit-tool>FAQ</button>
-            <select class="wiki-select" data-action="tone" aria-label="Tone">
-              <option value="">색상</option>
-              <option value="cyan">정보</option>
-              <option value="purple">강조</option>
-              <option value="amber">주의</option>
-              <option value="green">성공</option>
-              <option value="rose">위험</option>
-            </select>
           </div>
         </div>
         <div class="manage-section create-section">
@@ -776,17 +727,128 @@
     `);
   }
 
+  function createPageActionBar(main, titleEl) {
+    let bar = main.querySelector(':scope > .wiki-page-actions');
+    if (bar) {
+      state.pageBar = bar;
+      initPageActionBarEvents(bar);
+      return bar;
+    }
+    bar = document.createElement('div');
+    bar.className = 'wiki-page-actions';
+    bar.contentEditable = 'false';
+    bar.innerHTML = `
+      <div class="page-action-meta">
+        <span class="page-meta-status" data-page-meta>No local edits yet</span>
+        <span class="wiki-status page-status" data-page-status></span>
+      </div>
+      <div class="page-action-icons" aria-label="Page actions">
+        <button type="button" class="btn-wiki icon page-icon-btn" data-page-action="edit" title="Edit page" aria-label="Edit page">✎</button>
+        <button type="button" class="btn-wiki icon page-icon-btn primary" data-page-action="save" title="Save changes" aria-label="Save changes" hidden>✓</button>
+        <button type="button" class="btn-wiki icon page-icon-btn" data-page-action="cancel" title="Cancel edit" aria-label="Cancel edit" hidden>×</button>
+        <button type="button" class="btn-wiki icon page-icon-btn" data-page-action="history" title="View history" aria-label="View history">↺</button>
+      </div>
+      <div class="edit-tools-panel page-edit-tools" data-edit-tools hidden>
+        <select class="wiki-select" data-page-action="style" aria-label="Text style">
+          <option value="p">본문</option>
+          <option value="h2">제목</option>
+          <option value="h3">소제목</option>
+          <option value="h4">내용 제목</option>
+          <option value="dim">보조 설명</option>
+        </select>
+        <button type="button" class="btn-wiki" data-page-action="bold" data-edit-tool>Bold</button>
+        <button type="button" class="btn-wiki" data-page-action="bullet" data-edit-tool>List</button>
+        <button type="button" class="btn-wiki" data-page-action="numbered" data-edit-tool>1. List</button>
+        <button type="button" class="btn-wiki" data-page-action="table" data-edit-tool>Table</button>
+        <button type="button" class="btn-wiki" data-page-action="cards2" data-edit-tool>2 Cards</button>
+        <button type="button" class="btn-wiki" data-page-action="cards3" data-edit-tool>3 Cards</button>
+        <button type="button" class="btn-wiki" data-page-action="callout" data-edit-tool>Callout</button>
+        <button type="button" class="btn-wiki" data-page-action="faq" data-edit-tool>FAQ</button>
+        <select class="wiki-select" data-page-action="tone" aria-label="Tone">
+          <option value="">색상</option>
+          <option value="cyan">정보</option>
+          <option value="purple">강조</option>
+          <option value="amber">주의</option>
+          <option value="green">성공</option>
+          <option value="rose">위험</option>
+        </select>
+      </div>
+    `;
+    initPageActionBarEvents(bar);
+    if (titleEl && titleEl.parentElement === main) {
+      titleEl.insertAdjacentElement('afterend', bar);
+    } else {
+      main.insertBefore(bar, main.firstChild);
+    }
+    state.pageBar = bar;
+    return bar;
+  }
+
+  function initPageActionBarEvents(bar) {
+    if (bar.dataset.ready) return;
+    bar.dataset.ready = 'true';
+    bar.addEventListener('mousedown', (event) => {
+      if (event.target.closest('button[data-edit-tool]')) {
+        event.preventDefault();
+      }
+    });
+    bar.addEventListener('change', (event) => {
+      const target = event.target;
+      if (target.matches('[data-page-action="style"]')) {
+        applySemanticStyle(editArea(), target.value);
+        target.value = 'p';
+        return;
+      }
+      if (target.matches('[data-page-action="tone"]')) {
+        applyTone(editArea(), target.value);
+        target.value = '';
+      }
+    });
+    bar.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-page-action]');
+      if (!button) return;
+      const action = button.dataset.pageAction;
+      const task = handlePageActionClick(action, button);
+      if (task && typeof task.catch === 'function') {
+        task.catch((err) => {
+          window.alert(`페이지 편집 실패: ${err.message || err}`);
+          setPageStatus(`Failed: ${err.message || err}`, 'error');
+        });
+      }
+    });
+  }
+
+  async function handlePageActionClick(action, button) {
+    if (button && button.hasAttribute('data-edit-tool')) {
+      handleEditTool(action);
+      return;
+    }
+    if (action === 'edit') startEdit();
+    if (action === 'save') await saveEdit();
+    if (action === 'cancel') cancelEdit();
+    if (action === 'history') await openHistory();
+  }
+
   function ensureEditableArea(main) {
     let area = main.querySelector(':scope > .wiki-editable-area');
-    if (area) return area;
+    let titleEl = main.querySelector(':scope > h1');
+    if (!titleEl && area) {
+      titleEl = area.querySelector(':scope > h1');
+      if (titleEl) main.insertBefore(titleEl, area);
+    }
+    state.edit.titleEl = titleEl || null;
+    const bar = createPageActionBar(main, titleEl);
 
-    area = document.createElement('div');
-    area.className = 'wiki-editable-area';
-    area.tabIndex = -1;
-    Array.from(main.childNodes).forEach((node) => {
-      area.appendChild(node);
-    });
-    main.appendChild(area);
+    if (!area) {
+      area = document.createElement('div');
+      area.className = 'wiki-editable-area';
+      area.tabIndex = -1;
+      Array.from(main.childNodes).forEach((node) => {
+        if (node === titleEl || node === bar) return;
+        area.appendChild(node);
+      });
+      main.appendChild(area);
+    }
     return area;
   }
 
@@ -794,11 +856,19 @@
     const main = document.querySelector('main.content');
     if (!main || !isHttp || !isEditablePage()) return;
     state.edit.area = ensureEditableArea(main);
+    updatePageMeta();
+    syncEditControls();
   }
 
   function editArea() {
     if (!state.edit.area) setupEditableArea();
     return state.edit.area;
+  }
+
+  function editablePageHtml() {
+    const area = editArea();
+    const titleHtml = state.edit.titleEl ? `${state.edit.titleEl.outerHTML}\n` : '';
+    return `${titleHtml}${area ? area.innerHTML : ''}`;
   }
 
   function startEdit() {
@@ -811,7 +881,12 @@
     area.contentEditable = 'true';
     area.classList.add('wiki-editing');
     syncEditControls();
-    setManageStatus(`Editing as ${author}`, '');
+    const meta = state.pageBar && state.pageBar.querySelector('[data-page-meta]');
+    if (meta) {
+      meta.textContent = `Editing as ${author} · Unsaved changes`;
+      meta.dataset.tone = 'warning';
+    }
+    setPageStatus('', '');
     area.focus();
   }
 
@@ -824,7 +899,8 @@
     area.contentEditable = 'false';
     area.classList.remove('wiki-editing');
     syncEditControls();
-    setManageStatus('Edit cancelled', '');
+    updatePageMeta();
+    setPageStatus('Edit cancelled', '');
   }
 
   async function saveEdit() {
@@ -832,11 +908,11 @@
     if (!author) return;
     const area = editArea();
     if (!area || !state.edit.active) return;
-    setManageStatus('Saving...', '');
+    setPageStatus('Saving...', '');
     const data = await apiFetch('/page', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path: currentWikiPath(), content: area.innerHTML, author }),
+      body: JSON.stringify({ path: currentWikiPath(), content: editablePageHtml(), author }),
     });
     state.edit.original = '';
     state.edit.active = false;
@@ -851,8 +927,8 @@
       upstream_changed: false,
     };
     syncEditControls();
-    updateManagePageMeta();
-    setManageStatus(`Saved by ${data.updated_by || author} · ${formatFullDateTime(data.updated_at)}`, 'success');
+    updatePageMeta();
+    setPageStatus(`Saved by ${data.updated_by || author} · ${formatFullDateTime(data.updated_at)}`, 'success');
     await markSeen();
     await refreshNav();
   }
