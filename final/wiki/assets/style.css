@@ -129,14 +129,22 @@ aside.sidebar {
   top: 0;
   display: flex;
   width: 260px;
+  height: 100vh;
   min-height: 100vh;
   flex-shrink: 0;
   flex-direction: column;
-  overflow-y: auto;
+  overflow: hidden;
   border-right: 1px solid var(--color-border-subtle);
   background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(12px);
   padding: 20px 10px;
+}
+
+.sidebar-scroll {
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 14px;
 }
 
 aside.sidebar .logo {
@@ -202,6 +210,13 @@ aside.sidebar .category {
   text-transform: uppercase;
 }
 
+aside.sidebar .category-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
 aside.sidebar a.category {
   display: flex;
   align-items: center;
@@ -235,6 +250,8 @@ aside.sidebar .category + nav {
 
 aside.sidebar nav a {
   display: flex;
+  flex: 1;
+  min-width: 0;
   min-height: 34px;
   align-items: center;
   justify-content: space-between;
@@ -251,6 +268,12 @@ aside.sidebar nav a {
     border-color var(--duration-fast),
     color var(--duration-fast),
     transform var(--duration-fast);
+}
+
+.sidebar-item-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 aside.sidebar nav a:hover {
@@ -274,8 +297,10 @@ aside.sidebar .mvp-entry {
 }
 
 .sidebar-manage {
-  margin-top: auto;
-  padding: 18px 4px 0;
+  flex-shrink: 0;
+  border-top: 1px solid var(--color-border-subtle);
+  background: rgba(255, 255, 255, 0.96);
+  padding: 12px 4px 0;
 }
 
 .sidebar-manage-title {
@@ -289,11 +314,73 @@ aside.sidebar .mvp-entry {
   text-transform: uppercase;
 }
 
+.sidebar-author-control {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.sidebar-author-control label {
+  padding: 0 6px;
+  color: var(--color-text-tertiary);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.sidebar-author-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 34px;
+  gap: 6px;
+}
+
 .sidebar-tools {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 6px;
   margin: 0 0 8px;
+}
+
+.nav-actions {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 2px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+.category-row:hover .nav-actions,
+.category-row:focus-within .nav-actions,
+.sidebar-item-row:hover .nav-actions,
+.sidebar-item-row:focus-within .nav-actions {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.nav-action-btn {
+  display: inline-flex;
+  width: 24px;
+  height: 24px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 850;
+  line-height: 1;
+  padding: 0;
+}
+
+.nav-action-btn:hover {
+  border-color: var(--color-border);
+  background: var(--color-bg-sunken);
+  color: var(--color-accent);
 }
 
 .sidebar-btn {
@@ -856,30 +943,6 @@ main.content a {
   padding: 0;
 }
 
-.wiki-userbar {
-  position: fixed;
-  top: 18px;
-  right: 18px;
-  z-index: 120;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  border: 1px solid rgba(15, 76, 129, 0.14);
-  border-radius: var(--radius-lg);
-  background: rgba(255, 255, 255, 0.94);
-  box-shadow: var(--shadow-2);
-  backdrop-filter: blur(12px);
-  padding: 8px;
-}
-
-.wiki-userbar-label {
-  color: var(--color-text-tertiary);
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
 .wiki-comments-panel {
   position: fixed;
   top: 76px;
@@ -913,6 +976,32 @@ main.content a {
 .wiki-comments-panel.collapsed .comments-body,
 .wiki-comments-panel.collapsed .comment-composer {
   display: none;
+}
+
+.comment-toggle {
+  flex-shrink: 0;
+}
+
+.comment-toggle-icon {
+  position: relative;
+  display: block;
+  width: 17px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-radius: 7px;
+}
+
+.comment-toggle-icon::after {
+  position: absolute;
+  right: 1px;
+  bottom: -5px;
+  width: 7px;
+  height: 7px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  background: inherit;
+  content: '';
+  transform: rotate(35deg);
 }
 
 .comments-header {
@@ -1120,9 +1209,15 @@ main.content a {
   aside.sidebar {
     position: relative;
     width: 100%;
+    height: auto;
     min-height: auto;
+    overflow: visible;
     border-right: 0;
     border-bottom: 1px solid var(--color-border-subtle);
+  }
+
+  .sidebar-scroll {
+    overflow: visible;
   }
 
   aside.sidebar nav.sidebar-nav,
@@ -1158,9 +1253,4 @@ main.content a {
     top: 8px;
   }
 
-  .wiki-userbar {
-    top: 12px;
-    right: 12px;
-    max-width: calc(100vw - 24px);
-  }
 }

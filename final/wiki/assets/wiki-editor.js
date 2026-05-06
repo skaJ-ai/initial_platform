@@ -2,7 +2,6 @@
   const apiBase = '/api/wiki';
   const editableDocPaths = new Set(['/docs/ppt', '/docs/one-pager']);
   const isHttp = location.protocol === 'http:' || location.protocol === 'https:';
-  const userStorageKey = 'hr-ax-wiki-current-user';
   const state = {
     users: [],
     nav: null,
@@ -56,7 +55,20 @@
   }
 
   function currentUser() {
-    return state.currentUser || (state.users[0] && state.users[0].name) || 'local';
+    return state.currentUser || '';
+  }
+
+  function currentUserLabel() {
+    return currentUser() || '선택하기';
+  }
+
+  function requireCurrentUser(actionLabel) {
+    const user = currentUser();
+    if (user) return user;
+    window.alert(`${actionLabel} 전에 작성자를 선택하세요.`);
+    const select = document.querySelector('[data-user-select]');
+    if (select) select.focus();
+    return '';
   }
 
   function slugFromTitle(title) {
@@ -95,11 +107,7 @@
     if (!isHttp) return;
     const data = await apiFetch('/users');
     state.users = Array.isArray(data.users) ? data.users : [];
-    const stored = localStorage.getItem(userStorageKey);
-    const exists = state.users.some((user) => user.name === stored);
-    state.currentUser = exists ? stored : ((state.users[0] && state.users[0].name) || 'local');
-    localStorage.setItem(userStorageKey, state.currentUser);
-    renderUserBar();
+    state.currentUser = '';
   }
 
   async function addUser() {
@@ -112,44 +120,47 @@
     });
     state.users = data.users || state.users;
     state.currentUser = data.name;
-    localStorage.setItem(userStorageKey, state.currentUser);
     renderUserBar();
     await markSeen();
     await refreshNav();
   }
 
-  function renderUserBar() {
-    if (!isHttp || !isEditablePage()) return;
-    let userbar = document.querySelector('.wiki-userbar');
-    if (!userbar) {
-      userbar = document.createElement('div');
-      userbar.className = 'wiki-userbar';
-      userbar.innerHTML = `
-        <span class="wiki-userbar-label">작성자</span>
-        <select class="wiki-select" data-user-select aria-label="작성자"></select>
-        <button type="button" class="btn-wiki icon" data-user-add title="사용자 추가">+</button>
-      `;
-      document.body.appendChild(userbar);
-      userbar.querySelector('[data-user-add]').addEventListener('click', () => {
-        addUser().catch((err) => window.alert(`사용자 추가 실패: ${err.message || err}`));
-      });
-      userbar.querySelector('[data-user-select]').addEventListener('change', async (event) => {
-        state.currentUser = event.target.value;
-        localStorage.setItem(userStorageKey, state.currentUser);
-        updateCommentAuthorLabel();
-        await markSeen();
-        await refreshNav();
-      });
-    }
-
-    const select = userbar.querySelector('[data-user-select]');
+  function populateUserSelect(select) {
     select.innerHTML = '';
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = '선택하기';
+    placeholder.selected = !state.currentUser;
+    select.appendChild(placeholder);
     state.users.forEach((user) => {
       const option = document.createElement('option');
       option.value = user.name;
       option.textContent = user.name;
       option.selected = user.name === state.currentUser;
       select.appendChild(option);
+    });
+  }
+
+  function renderAuthorControl(container) {
+    const author = document.createElement('div');
+    author.className = 'sidebar-author-control';
+    author.innerHTML = `
+      <label for="wiki-author-select">작성자</label>
+      <div class="sidebar-author-row">
+        <select id="wiki-author-select" class="wiki-select" data-user-select aria-label="작성자"></select>
+        <button type="button" class="btn-wiki icon" data-user-add title="사용자 추가">+</button>
+      </div>
+    `;
+    container.appendChild(author);
+    populateUserSelect(author.querySelector('[data-user-select]'));
+    author.querySelector('[data-user-add]').addEventListener('click', () => {
+      addUser().catch((err) => window.alert(`사용자 추가 실패: ${err.message || err}`));
+    });
+    author.querySelector('[data-user-select]').addEventListener('change', async (event) => {
+      state.currentUser = event.target.value;
+      updateCommentAuthorLabel();
+      await markSeen();
+      await refreshNav();
     });
   }
 
@@ -161,11 +172,12 @@
     heading.className = 'sidebar-manage-title';
     heading.textContent = 'Wiki Manage';
     manage.appendChild(heading);
+    renderAuthorControl(manage);
 
     const tools = document.createElement('div');
     tools.className = 'sidebar-tools';
-    tools.appendChild(createButton('+ Page', 'btn-wiki sidebar-btn', 'sidebar-page'));
     tools.appendChild(createButton('+ Category', 'btn-wiki sidebar-btn', 'sidebar-category'));
+    tools.appendChild(createButton('+ Page', 'btn-wiki sidebar-btn', 'sidebar-page'));
 
     const panel = document.createElement('div');
     panel.className = 'sidebar-create-panel';
@@ -208,13 +220,15 @@
       if (!panel.hidden) titleInput.focus();
     });
     tools.querySelector('[data-action="sidebar-category"]').addEventListener('click', async () => {
+      const author = requireCurrentUser('카테고리 생성');
+      if (!author) return;
       const title = window.prompt('새 카테고리 이름');
       if (!title || !title.trim()) return;
       try {
         await apiFetch('/category', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ title: title.trim(), author: currentUser() }),
+          body: JSON.stringify({ title: title.trim(), author }),
         });
         await refreshNav();
       } catch (err) {
@@ -228,6 +242,8 @@
       slugInput.dataset.slugTouched = 'false';
     });
     panel.querySelector('[data-create-page]').addEventListener('click', async () => {
+      const author = requireCurrentUser('페이지 생성');
+      if (!author) return;
       const title = titleInput.value.trim();
       const slug = slugInput.value.trim() || slugFromTitle(title);
       if (!title) {
@@ -242,7 +258,7 @@
             title,
             slug,
             category_id: categorySelect.value,
-            author: currentUser(),
+            author,
           }),
         });
         location.href = data.url;
@@ -256,7 +272,115 @@
     sidebar.appendChild(manage);
   }
 
+  function navActionButton(label, title, action) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'nav-action-btn';
+    button.dataset.navAction = action;
+    button.title = title;
+    button.textContent = label;
+    return button;
+  }
+
+  async function moveNav(targetType, id, direction) {
+    const author = requireCurrentUser('순서 변경');
+    if (!author) return;
+    await apiFetch('/nav/move', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ target_type: targetType, id, direction, author }),
+    });
+    await refreshNav();
+  }
+
+  async function renameCategory(category) {
+    const author = requireCurrentUser('카테고리 이름 변경');
+    if (!author) return;
+    const title = window.prompt('카테고리 이름', category.title);
+    if (!title || !title.trim() || title.trim() === category.title) return;
+    await apiFetch(`/category/${encodeURIComponent(category.id)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: title.trim(), author }),
+    });
+    await refreshNav();
+  }
+
+  async function deleteCategory(category) {
+    const author = requireCurrentUser('카테고리 삭제');
+    if (!author) return;
+    if (!window.confirm(`"${category.title}" 카테고리를 삭제할까요? 비어 있는 사용자 카테고리만 삭제됩니다.`)) return;
+    await apiFetch(`/category/${encodeURIComponent(category.id)}`, { method: 'DELETE' });
+    await refreshNav();
+  }
+
+  async function renamePage(item) {
+    const author = requireCurrentUser('페이지 이름 변경');
+    if (!author) return;
+    const title = window.prompt('페이지 이름', item.title);
+    if (!title || !title.trim() || title.trim() === item.title) return;
+    await apiFetch('/page-title', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: item.path, title: title.trim(), author }),
+    });
+    await refreshNav();
+  }
+
+  async function deletePage(item) {
+    const author = requireCurrentUser('페이지 삭제');
+    if (!author) return;
+    if (!window.confirm(`"${item.title}" 페이지를 삭제할까요? 사용자 생성 페이지의 DB overlay가 삭제됩니다.`)) return;
+    await apiFetch(`/page?path=${encodeURIComponent(item.path)}`, { method: 'DELETE' });
+    if (isActiveUrl(item.url)) {
+      location.href = '/wiki/overview.html';
+      return;
+    }
+    await refreshNav();
+  }
+
+  function renderCategoryHeader(container, category) {
+    const row = document.createElement('div');
+    row.className = 'category category-row';
+    row.dataset.categoryId = category.id;
+
+    const title = document.createElement('span');
+    title.textContent = category.title;
+    row.appendChild(title);
+
+    const actions = document.createElement('span');
+    actions.className = 'nav-actions';
+    actions.appendChild(navActionButton('↑', '위로 이동', 'move-up'));
+    actions.appendChild(navActionButton('↓', '아래로 이동', 'move-down'));
+    if (!category.is_seed) {
+      actions.appendChild(navActionButton('Edit', '이름 변경', 'rename'));
+      actions.appendChild(navActionButton('Del', '삭제', 'delete'));
+    }
+    row.appendChild(actions);
+    actions.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-nav-action]');
+      if (!button) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const action = button.dataset.navAction;
+      const task = action === 'move-up'
+        ? moveNav('category', category.id, 'up')
+        : action === 'move-down'
+          ? moveNav('category', category.id, 'down')
+          : action === 'rename'
+            ? renameCategory(category)
+            : action === 'delete'
+              ? deleteCategory(category)
+              : Promise.resolve();
+      task.catch((err) => window.alert(`카테고리 관리 실패: ${err.message || err}`));
+    });
+    container.appendChild(row);
+  }
+
   function appendNavLink(nav, item) {
+    const row = document.createElement('div');
+    row.className = 'sidebar-item-row';
+
     const link = document.createElement('a');
     link.href = item.url;
     link.dataset.path = item.path;
@@ -273,7 +397,36 @@
       badge.textContent = 'NEW';
       link.appendChild(badge);
     }
-    nav.appendChild(link);
+
+    const actions = document.createElement('span');
+    actions.className = 'nav-actions';
+    actions.appendChild(navActionButton('↑', '위로 이동', 'move-up'));
+    actions.appendChild(navActionButton('↓', '아래로 이동', 'move-down'));
+    if (!item.is_seed) {
+      actions.appendChild(navActionButton('Edit', '이름 변경', 'rename'));
+      actions.appendChild(navActionButton('Del', '삭제', 'delete'));
+    }
+    actions.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-nav-action]');
+      if (!button) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const action = button.dataset.navAction;
+      const task = action === 'move-up'
+        ? moveNav('page', item.path, 'up')
+        : action === 'move-down'
+          ? moveNav('page', item.path, 'down')
+          : action === 'rename'
+            ? renamePage(item)
+            : action === 'delete'
+              ? deletePage(item)
+              : Promise.resolve();
+      task.catch((err) => window.alert(`페이지 관리 실패: ${err.message || err}`));
+    });
+
+    row.appendChild(link);
+    row.appendChild(actions);
+    nav.appendChild(row);
   }
 
   function renderSidebar(navData) {
@@ -288,6 +441,9 @@
     sidebar.innerHTML = '';
     sidebar.appendChild(logo);
 
+    const scrollArea = document.createElement('div');
+    scrollArea.className = 'sidebar-scroll';
+
     const overview = document.createElement('a');
     overview.href = navData.overview.url;
     overview.className = 'category category-link';
@@ -299,18 +455,15 @@
       badge.textContent = 'NEW';
       overview.appendChild(badge);
     }
-    sidebar.appendChild(overview);
+    scrollArea.appendChild(overview);
 
     (navData.categories || []).forEach((category) => {
-      const categoryNode = document.createElement('div');
-      categoryNode.className = 'category';
-      categoryNode.textContent = category.title;
-      sidebar.appendChild(categoryNode);
+      renderCategoryHeader(scrollArea, category);
 
       const itemNav = document.createElement('nav');
       itemNav.className = 'sidebar-nav';
       (category.items || []).forEach((item) => appendNavLink(itemNav, item));
-      sidebar.appendChild(itemNav);
+      scrollArea.appendChild(itemNav);
     });
 
     const mvp = navData.mvp || { title: 'MVP Demo', url: '/mvp/', path: 'mvp' };
@@ -318,8 +471,9 @@
     mvpLink.href = mvp.url;
     mvpLink.className = 'category category-link mvp-entry';
     mvpLink.textContent = mvp.title;
-    sidebar.appendChild(mvpLink);
+    scrollArea.appendChild(mvpLink);
 
+    sidebar.appendChild(scrollArea);
     renderSidebarActions(sidebar, navData.categories || []);
   }
 
@@ -332,6 +486,7 @@
 
   async function markSeen() {
     if (!isHttp || !isEditablePage()) return;
+    if (!currentUser()) return;
     await apiFetch('/seen', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -505,7 +660,7 @@
       toolbar.querySelector('[data-action="save"]').hidden = false;
       toolbar.querySelector('[data-action="cancel"]').hidden = false;
       setEditToolsVisible(toolbar, true);
-      setStatus(toolbar, `Editing as ${currentUser()}`, '');
+      setStatus(toolbar, currentUser() ? `Editing as ${currentUser()}` : '작성자 선택 필요', '');
       editArea.focus();
     });
 
@@ -521,12 +676,14 @@
     });
 
     toolbar.querySelector('[data-action="save"]').addEventListener('click', async () => {
+      const author = requireCurrentUser('저장');
+      if (!author) return;
       setStatus(toolbar, 'Saving...', '');
       try {
         await apiFetch('/page', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ path: currentWikiPath(), content: editArea.innerHTML, author: currentUser() }),
+          body: JSON.stringify({ path: currentWikiPath(), content: editArea.innerHTML, author }),
         });
         editArea.contentEditable = 'false';
         editArea.classList.remove('wiki-editing');
@@ -534,7 +691,7 @@
         toolbar.querySelector('[data-action="save"]').hidden = true;
         toolbar.querySelector('[data-action="cancel"]').hidden = true;
         setEditToolsVisible(toolbar, false);
-        setStatus(toolbar, `Saved by ${currentUser()}`, 'success');
+        setStatus(toolbar, `Saved by ${author}`, 'success');
         await markSeen();
         await refreshNav();
       } catch (err) {
@@ -571,7 +728,7 @@
 
   function updateCommentAuthorLabel() {
     const label = document.querySelector('[data-comment-author]');
-    if (label) label.textContent = currentUser();
+    if (label) label.textContent = currentUserLabel();
   }
 
   function renderComments() {
@@ -609,27 +766,35 @@
   function createCommentsRail() {
     if (!isHttp || !isEditablePage()) return;
     const rail = document.createElement('aside');
-    rail.className = 'wiki-comments-panel collapsed';
+    rail.className = 'wiki-comments-panel';
     rail.innerHTML = `
       <div class="comments-header">
         <div>
-          <div class="comments-kicker">Page Memo</div>
-          <h2>메모</h2>
+          <div class="comments-kicker">Page Chat</div>
+          <h2>Chat</h2>
         </div>
-        <button type="button" class="btn-wiki icon" data-comments-toggle title="메모 패널 접기">×</button>
+        <button type="button" class="btn-wiki icon comment-toggle" data-comments-toggle title="Chat 패널 접기" aria-label="Chat 패널 접기">
+          <span class="comment-toggle-icon" aria-hidden="true"></span>
+        </button>
       </div>
       <div class="comments-body" data-comments-list></div>
       <div class="comment-composer">
-        <div class="comment-author">작성자 <strong data-comment-author>${currentUser()}</strong></div>
-        <textarea class="wiki-textarea" data-comment-input rows="4" placeholder="페이지별 메모를 남기세요."></textarea>
-        <button type="button" class="btn-wiki primary" data-comment-submit>메모 저장</button>
+        <div class="comment-author">작성자 <strong data-comment-author>${currentUserLabel()}</strong></div>
+        <textarea class="wiki-textarea" data-comment-input rows="4" placeholder="페이지별 의견을 남기세요."></textarea>
+        <button type="button" class="btn-wiki primary" data-comment-submit>전송</button>
       </div>
     `;
     document.body.appendChild(rail);
     rail.querySelector('[data-comments-toggle]').addEventListener('click', () => {
       rail.classList.toggle('collapsed');
+      const collapsed = rail.classList.contains('collapsed');
+      const button = rail.querySelector('[data-comments-toggle]');
+      button.title = collapsed ? 'Chat 패널 열기' : 'Chat 패널 접기';
+      button.setAttribute('aria-label', button.title);
     });
     rail.querySelector('[data-comment-submit]').addEventListener('click', async () => {
+      const author = requireCurrentUser('전송');
+      if (!author) return;
       const textarea = rail.querySelector('[data-comment-input]');
       const body = textarea.value.trim();
       if (!body) {
@@ -640,7 +805,7 @@
         const data = await apiFetch('/comments', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ path: currentWikiPath(), body, author: currentUser() }),
+          body: JSON.stringify({ path: currentWikiPath(), body, author }),
         });
         state.comments.push(data.comment);
         textarea.value = '';

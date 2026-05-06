@@ -137,6 +137,24 @@ class WikiSeenUpdate(BaseModel):
     user: str | None = None
 
 
+class WikiNavMove(BaseModel):
+    target_type: str
+    id: str
+    direction: str
+    author: str | None = None
+
+
+class WikiTitleUpdate(BaseModel):
+    title: str
+    author: str | None = None
+
+
+class WikiPageTitleUpdate(BaseModel):
+    path: str
+    title: str
+    author: str | None = None
+
+
 def _utc_now() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
@@ -232,10 +250,10 @@ def _ensure_wiki_reference_data(conn: sqlite3.Connection) -> None:
         conn.execute(
             """
             UPDATE wiki_nav_categories
-            SET title = ?, sort_order = ?, is_seed = 1
+            SET title = ?, is_seed = 1
             WHERE id = ? AND is_seed = 1
             """,
-            (category["title"], category["sort_order"], category["id"]),
+            (category["title"], category["id"]),
         )
         for item in category["items"]:
             conn.execute(
@@ -257,10 +275,10 @@ def _ensure_wiki_reference_data(conn: sqlite3.Connection) -> None:
             conn.execute(
                 """
                 UPDATE wiki_nav_items
-                SET category_id = ?, title = ?, url = ?, sort_order = ?, is_seed = 1
+                SET category_id = ?, title = ?, url = ?, is_seed = 1
                 WHERE path = ? AND is_seed = 1
                 """,
-                (category["id"], item["title"], item["url"], item["sort_order"], item["path"]),
+                (category["id"], item["title"], item["url"], item["path"]),
             )
 
     rows = conn.execute(
@@ -748,6 +766,45 @@ def _mark_page_seen(page_path: str, user: str | None) -> dict[str, Any]:
     return {"ok": True, "path": path, "user": user_name, "seen_at": now}
 
 
+def _move_sorted_row(
+    conn: sqlite3.Connection,
+    *,
+    table: str,
+    key_column: str,
+    key: str,
+    direction: str,
+    author: str | None = None,
+    where_sql: str = "",
+    where_params: tuple[Any, ...] = (),
+) -> bool:
+    if direction not in {"up", "down"}:
+        raise HTTPException(status_code=400, detail="Direction must be up or down")
+    rows = conn.execute(
+        f"SELECT {key_column} AS row_key, sort_order FROM {table} {where_sql} ORDER BY sort_order, row_key COLLATE NOCASE",
+        where_params,
+    ).fetchall()
+    index = next((idx for idx, row in enumerate(rows) if row["row_key"] == key), None)
+    if index is None:
+        raise HTTPException(status_code=404, detail="Navigation item not found")
+    target_index = index - 1 if direction == "up" else index + 1
+    if target_index < 0 or target_index >= len(rows):
+        return False
+
+    now = _utc_now()
+    updated_by = _ensure_user(conn, author)
+    current = rows[index]
+    target = rows[target_index]
+    conn.execute(
+        f"UPDATE {table} SET sort_order = ?, updated_at = ?, updated_by = ? WHERE {key_column} = ?",
+        (target["sort_order"], now, updated_by, current["row_key"]),
+    )
+    conn.execute(
+        f"UPDATE {table} SET sort_order = ?, updated_at = ?, updated_by = ? WHERE {key_column} = ?",
+        (current["sort_order"], now, updated_by, target["row_key"]),
+    )
+    return True
+
+
 def _wiki_sidebar(active: str = "") -> str:
     def active_attr(path: str) -> str:
         return ' class="active"' if path == active else ""
@@ -802,7 +859,7 @@ def _page_template(title: str, main_content: str, active: str = "") -> str:
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{safe_title} - HR AX Platform Wiki</title>
 <link rel="icon" href="data:,">
-<link rel="stylesheet" href="/wiki/assets/style.css?v=3">
+<link rel="stylesheet" href="/wiki/assets/style.css?v=5">
 </head>
 <body>
 
@@ -812,7 +869,7 @@ def _page_template(title: str, main_content: str, active: str = "") -> str:
 {main_content.strip()}
 </main>
 
-<script src="/wiki/assets/wiki-editor.js?v=6"></script>
+<script src="/wiki/assets/wiki-editor.js?v=8"></script>
 </body>
 </html>
 """
@@ -1120,6 +1177,82 @@ async def create_wiki_category(category: WikiCategoryCreate) -> dict[str, Any]:
     return {"ok": True, "category": {"id": category_id, "title": title, "is_seed": False, "items": []}}
 
 
+@app.put("/api/wiki/category/{category_id}")
+async def update_wiki_category(category_id: str, update: WikiTitleUpdate) -> dict[str, Any]:
+    title = _clean_label(update.title, max_length=60)
+    if not title:
+        raise HTTPException(status_code=400, detail="Category title is required")
+    now = _utc_now()
+    with _db() as conn:
+        author = _ensure_user(conn, update.author)
+        row = conn.execute("SELECT id, is_seed FROM wiki_nav_categories WHERE id = ?", (category_id,)).fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Category not found")
+        if row["is_seed"]:
+            raise HTTPException(status_code=400, detail="Seed categories cannot be renamed")
+        if conn.execute(
+            "SELECT 1 FROM wiki_nav_categories WHERE lower(title) = lower(?) AND id <> ?",
+            (title, category_id),
+        ).fetchone():
+            raise HTTPException(status_code=409, detail="Category already exists")
+        conn.execute(
+            """
+            UPDATE wiki_nav_categories
+            SET title = ?, updated_at = ?, updated_by = ?
+            WHERE id = ?
+            """,
+            (title, now, author, category_id),
+        )
+    return {"ok": True, "id": category_id, "title": title}
+
+
+@app.delete("/api/wiki/category/{category_id}")
+async def delete_wiki_category(category_id: str) -> dict[str, Any]:
+    with _db() as conn:
+        row = conn.execute("SELECT id, is_seed FROM wiki_nav_categories WHERE id = ?", (category_id,)).fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Category not found")
+        if row["is_seed"]:
+            raise HTTPException(status_code=400, detail="Seed categories cannot be deleted")
+        if conn.execute("SELECT 1 FROM wiki_nav_items WHERE category_id = ? LIMIT 1", (category_id,)).fetchone():
+            raise HTTPException(status_code=400, detail="Move or delete pages before deleting this category")
+        conn.execute("DELETE FROM wiki_nav_categories WHERE id = ?", (category_id,))
+    return {"ok": True, "id": category_id}
+
+
+@app.post("/api/wiki/nav/move")
+async def move_wiki_nav_item(move: WikiNavMove) -> dict[str, Any]:
+    with _db() as conn:
+        author = _ensure_user(conn, move.author)
+        if move.target_type == "category":
+            moved = _move_sorted_row(
+                conn,
+                table="wiki_nav_categories",
+                key_column="id",
+                key=move.id,
+                direction=move.direction,
+                author=author,
+            )
+            return {"ok": True, "moved": moved}
+        if move.target_type == "page":
+            path = _normalize_nav_path(move.id)
+            row = conn.execute("SELECT category_id FROM wiki_nav_items WHERE path = ?", (path,)).fetchone()
+            if not row:
+                raise HTTPException(status_code=404, detail="Navigation page not found")
+            moved = _move_sorted_row(
+                conn,
+                table="wiki_nav_items",
+                key_column="path",
+                key=path,
+                direction=move.direction,
+                author=author,
+                where_sql="WHERE category_id = ?",
+                where_params=(row["category_id"],),
+            )
+            return {"ok": True, "moved": moved}
+    raise HTTPException(status_code=400, detail="target_type must be category or page")
+
+
 @app.get("/api/wiki/page")
 async def get_wiki_page(path: str) -> dict[str, Any]:
     return _read_editable_content(path)
@@ -1176,6 +1309,56 @@ async def create_wiki_page(page: WikiCreate) -> dict[str, Any]:
             (path, category_id, title, _nav_url_for_path(path), max_sort + 10, now, now, author),
         )
     return {"ok": True, "path": path, "url": f"/wiki/{path}"}
+
+
+@app.put("/api/wiki/page-title")
+async def update_wiki_page_title(update: WikiPageTitleUpdate) -> dict[str, Any]:
+    path = _normalize_edit_path(update.path)
+    title = _clean_label(update.title, max_length=120)
+    if not title:
+        raise HTTPException(status_code=400, detail="Page title is required")
+    now = _utc_now()
+    with _db() as conn:
+        author = _ensure_user(conn, update.author)
+        row = conn.execute("SELECT path, source_type FROM wiki_pages WHERE path = ?", (path,)).fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Custom page not found")
+        if row["source_type"] != "user":
+            raise HTTPException(status_code=400, detail="Seed pages cannot be renamed here")
+        conn.execute(
+            """
+            UPDATE wiki_pages
+            SET title = ?, updated_at = ?, updated_by = ?
+            WHERE path = ?
+            """,
+            (title, now, author, path),
+        )
+        conn.execute(
+            """
+            UPDATE wiki_nav_items
+            SET title = ?, updated_at = ?, updated_by = ?
+            WHERE path = ?
+            """,
+            (title, now, author, path),
+        )
+    return {"ok": True, "path": path, "title": title}
+
+
+@app.delete("/api/wiki/page")
+async def delete_wiki_page(path: str) -> dict[str, Any]:
+    page_path = _normalize_edit_path(path)
+    with _db() as conn:
+        row = conn.execute("SELECT path, source_type FROM wiki_pages WHERE path = ?", (page_path,)).fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Custom page not found")
+        if row["source_type"] != "user":
+            raise HTTPException(status_code=400, detail="Seed pages cannot be deleted")
+        conn.execute("DELETE FROM wiki_comments WHERE page_path = ?", (page_path,))
+        conn.execute("DELETE FROM wiki_page_seen WHERE page_path = ?", (page_path,))
+        conn.execute("DELETE FROM wiki_nav_items WHERE path = ?", (page_path,))
+        conn.execute("DELETE FROM wiki_revisions WHERE path = ?", (page_path,))
+        conn.execute("DELETE FROM wiki_pages WHERE path = ?", (page_path,))
+    return {"ok": True, "path": page_path}
 
 
 @app.get("/api/wiki/comments")
