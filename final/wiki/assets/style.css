@@ -128,7 +128,7 @@ aside.sidebar {
   position: sticky;
   top: 0;
   display: flex;
-  width: 260px;
+  width: 312px;
   height: 100vh;
   min-height: 100vh;
   flex-shrink: 0;
@@ -137,7 +137,7 @@ aside.sidebar {
   border-right: 1px solid var(--color-border-subtle);
   background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(12px);
-  padding: 20px 10px;
+  padding: 20px 12px;
 }
 
 .sidebar-scroll {
@@ -272,8 +272,16 @@ aside.sidebar nav a {
 
 .sidebar-item-row {
   display: flex;
+  min-width: 0;
   align-items: center;
   gap: 4px;
+}
+
+aside.sidebar nav a > span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 aside.sidebar nav a:hover {
@@ -298,11 +306,10 @@ aside.sidebar .mvp-entry {
 
 .sidebar-manage {
   flex-shrink: 0;
-  max-height: 54vh;
-  overflow-y: auto;
+  overflow: visible;
   border-top: 1px solid var(--color-border-subtle);
   background: rgba(255, 255, 255, 0.96);
-  padding: 12px 4px 0;
+  padding: 12px 6px 0;
 }
 
 .sidebar-manage-title {
@@ -348,9 +355,9 @@ aside.sidebar .mvp-entry {
 }
 
 .manage-section.author-section {
-  border-color: transparent;
-  background: transparent;
-  padding: 0 4px;
+  border-color: var(--color-border-subtle);
+  background: var(--color-bg-elevated);
+  padding: 10px;
 }
 
 .manage-label,
@@ -591,7 +598,7 @@ main.content h1 .badge {
   min-width: 0;
   flex: 1;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 7px 10px;
 }
 
@@ -602,6 +609,7 @@ main.content h1 .badge {
   font-weight: 700;
   line-height: 1.35;
   padding: 0;
+  white-space: nowrap;
 }
 
 .wiki-page-actions .page-meta-status[data-tone="success"] {
@@ -637,6 +645,7 @@ main.content h1 .badge {
 
 .page-status {
   max-width: 360px;
+  white-space: nowrap;
 }
 
 .page-edit-tools {
@@ -1102,12 +1111,12 @@ main.content a {
 
 .wiki-comments-panel {
   position: fixed;
-  top: 76px;
+  top: 18px;
   right: 18px;
   bottom: 18px;
   z-index: 90;
   display: flex;
-  width: 310px;
+  width: 360px;
   flex-direction: column;
   overflow: hidden;
   border: 1px solid rgba(15, 76, 129, 0.14);
@@ -1545,6 +1554,15 @@ main.content a {
 
   main.content h1 {
     font-size: 32px;
+  }
+
+  .page-action-meta {
+    flex-wrap: wrap;
+  }
+
+  .wiki-page-actions .page-meta-status,
+  .page-status {
+    white-space: normal;
   }
 
   .cards.cards-2,
