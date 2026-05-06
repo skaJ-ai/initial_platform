@@ -26,6 +26,58 @@ DOC_PAGE_SOURCES = {
     "docs/ppt": FINAL_ROOT / "PPT.md",
     "docs/one-pager": FINAL_ROOT / "ONE_PAGER.md",
 }
+SEED_NAV_TIMESTAMP = "2026-01-01T00:00:00Z"
+DEFAULT_WIKI_USERS_FIXED = ["차완철", "김병주", "남상혁"]
+DEFAULT_WIKI_USERS_SORTED = [
+    "공현진",
+    "문필준",
+    "민대홍",
+    "장석하",
+    "김종원",
+    "김하나",
+    "박정광",
+    "안병웅",
+    "윤서완",
+    "이소정",
+]
+DEFAULT_WIKI_NAV = [
+    {
+        "id": "platform",
+        "title": "Core Pillars",
+        "sort_order": 10,
+        "items": [
+            {"path": "data-governance.html", "title": "Data Governance", "url": "/wiki/data-governance.html", "sort_order": 10},
+            {"path": "harness-engineering.html", "title": "Harness Engineering", "url": "/wiki/harness-engineering.html", "sort_order": 20},
+        ],
+    },
+    {
+        "id": "concepts",
+        "title": "Concepts",
+        "sort_order": 20,
+        "items": [
+            {"path": "terminology.html", "title": "용어 사전", "url": "/wiki/terminology.html", "sort_order": 10},
+            {"path": "scenarios.html", "title": "사용 시나리오", "url": "/wiki/scenarios.html", "sort_order": 20},
+        ],
+    },
+    {
+        "id": "reference",
+        "title": "Reference",
+        "sort_order": 30,
+        "items": [
+            {"path": "faq.html", "title": "FAQ", "url": "/wiki/faq.html", "sort_order": 10},
+            {"path": "next-actions.html", "title": "다음 액션", "url": "/wiki/next-actions.html", "sort_order": 20},
+        ],
+    },
+    {
+        "id": "documents",
+        "title": "Documents",
+        "sort_order": 40,
+        "items": [
+            {"path": "docs/ppt", "title": "PPT", "url": "/docs/ppt", "sort_order": 10},
+            {"path": "docs/one-pager", "title": "One Pager", "url": "/docs/one-pager", "sort_order": 20},
+        ],
+    },
+]
 
 PORT = os.getenv("PORT", "26000")
 WIKI_DB_PATH = Path(os.getenv("WIKI_DB_PATH", str(ROOT / ".local" / "wiki.sqlite")))
@@ -54,12 +106,35 @@ app.add_middleware(
 class WikiUpdate(BaseModel):
     path: str
     content: str
+    author: str | None = None
 
 
 class WikiCreate(BaseModel):
     title: str
     slug: str
+    category_id: str | None = None
     content: str | None = None
+    author: str | None = None
+
+
+class WikiUserCreate(BaseModel):
+    name: str
+
+
+class WikiCategoryCreate(BaseModel):
+    title: str
+    author: str | None = None
+
+
+class WikiCommentCreate(BaseModel):
+    path: str
+    body: str
+    author: str | None = None
+
+
+class WikiSeenUpdate(BaseModel):
+    path: str
+    user: str | None = None
 
 
 def _utc_now() -> str:
@@ -68,6 +143,156 @@ def _utc_now() -> str:
 
 def _hash_text(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def _clean_label(value: str | None, *, max_length: int = 80) -> str:
+    cleaned = re.sub(r"[\x00-\x1f\x7f]+", " ", value or "").strip()
+    cleaned = re.sub(r"\s{2,}", " ", cleaned)
+    return cleaned[:max_length].strip()
+
+
+def _clean_body(value: str | None, *, max_length: int = 2000) -> str:
+    cleaned = (value or "").replace("\r\n", "\n").replace("\r", "\n")
+    cleaned = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]+", "", cleaned)
+    return cleaned[:max_length].strip()
+
+
+def _normalize_author(author: str | None) -> str:
+    return _clean_label(author, max_length=40) or "local"
+
+
+def _table_columns(conn: sqlite3.Connection, table: str) -> set[str]:
+    return {row["name"] for row in conn.execute(f"PRAGMA table_info({table})").fetchall()}
+
+
+def _ensure_column(conn: sqlite3.Connection, table: str, column: str, ddl: str) -> None:
+    if column not in _table_columns(conn, table):
+        conn.execute(f"ALTER TABLE {table} ADD COLUMN {ddl}")
+
+
+def _category_id_from_title(title: str) -> str:
+    ascii_slug = re.sub(r"[^a-z0-9_-]+", "-", title.lower()).strip("-")
+    if ascii_slug:
+        return f"user-{ascii_slug[:48]}"
+    return f"user-{hashlib.sha1(title.encode('utf-8')).hexdigest()[:12]}"
+
+
+def _nav_url_for_path(path: str) -> str:
+    if path == "mvp":
+        return "/mvp/"
+    if path.startswith("docs/"):
+        return f"/{path}"
+    if path.startswith("/"):
+        return path
+    return f"/wiki/{path}"
+
+
+def _normalize_nav_path(page_path: str) -> str:
+    clean = (page_path or "").replace("\\", "/").strip()
+    if clean in {"/mvp", "/mvp/"}:
+        return "mvp"
+    if clean.startswith("/docs/"):
+        return clean.strip("/")
+    return _normalize_edit_path(clean)
+
+
+def _ensure_user(conn: sqlite3.Connection, author: str | None) -> str:
+    name = _normalize_author(author)
+    if name != "local":
+        conn.execute(
+            """
+            INSERT OR IGNORE INTO wiki_users (name, is_seed, created_at)
+            VALUES (?, 0, ?)
+            """,
+            (name, _utc_now()),
+        )
+    return name
+
+
+def _ensure_wiki_reference_data(conn: sqlite3.Connection) -> None:
+    now = _utc_now()
+    for name in DEFAULT_WIKI_USERS_FIXED + DEFAULT_WIKI_USERS_SORTED:
+        conn.execute(
+            """
+            INSERT OR IGNORE INTO wiki_users (name, is_seed, created_at)
+            VALUES (?, 1, ?)
+            """,
+            (name, SEED_NAV_TIMESTAMP),
+        )
+
+    for category in DEFAULT_WIKI_NAV:
+        conn.execute(
+            """
+            INSERT OR IGNORE INTO wiki_nav_categories
+                (id, title, sort_order, is_seed, created_at, updated_at, updated_by)
+            VALUES (?, ?, ?, 1, ?, ?, 'seed')
+            """,
+            (category["id"], category["title"], category["sort_order"], SEED_NAV_TIMESTAMP, SEED_NAV_TIMESTAMP),
+        )
+        conn.execute(
+            """
+            UPDATE wiki_nav_categories
+            SET title = ?, sort_order = ?, is_seed = 1
+            WHERE id = ? AND is_seed = 1
+            """,
+            (category["title"], category["sort_order"], category["id"]),
+        )
+        for item in category["items"]:
+            conn.execute(
+                """
+                INSERT OR IGNORE INTO wiki_nav_items
+                    (path, category_id, title, url, sort_order, is_seed, created_at, updated_at, updated_by)
+                VALUES (?, ?, ?, ?, ?, 1, ?, ?, 'seed')
+                """,
+                (
+                    item["path"],
+                    category["id"],
+                    item["title"],
+                    item["url"],
+                    item["sort_order"],
+                    SEED_NAV_TIMESTAMP,
+                    SEED_NAV_TIMESTAMP,
+                ),
+            )
+            conn.execute(
+                """
+                UPDATE wiki_nav_items
+                SET category_id = ?, title = ?, url = ?, sort_order = ?, is_seed = 1
+                WHERE path = ? AND is_seed = 1
+                """,
+                (category["id"], item["title"], item["url"], item["sort_order"], item["path"]),
+            )
+
+    rows = conn.execute(
+        """
+        SELECT path, title, created_at, updated_at, updated_by
+        FROM wiki_pages
+        WHERE path LIKE 'pages/%.html'
+        """
+    ).fetchall()
+    max_sort = conn.execute(
+        "SELECT COALESCE(MAX(sort_order), 999) AS max_sort FROM wiki_nav_items WHERE category_id = 'concepts'"
+    ).fetchone()["max_sort"]
+    for row in rows:
+        if conn.execute("SELECT 1 FROM wiki_nav_items WHERE path = ?", (row["path"],)).fetchone():
+            continue
+        max_sort += 10
+        conn.execute(
+            """
+            INSERT INTO wiki_nav_items
+                (path, category_id, title, url, sort_order, is_seed, created_at, updated_at, updated_by)
+            VALUES (?, 'concepts', ?, ?, ?, 0, ?, ?, ?)
+            """,
+            (
+                row["path"],
+                row["title"],
+                _nav_url_for_path(row["path"]),
+                max_sort,
+                row["created_at"] or now,
+                row["updated_at"] or now,
+                row["updated_by"] or "local",
+            ),
+        )
 
 
 @contextmanager
@@ -105,6 +330,71 @@ def _db() -> Iterator[sqlite3.Connection]:
         """
     )
     conn.execute("CREATE INDEX IF NOT EXISTS idx_wiki_revisions_path ON wiki_revisions(path, id)")
+    _ensure_column(conn, "wiki_pages", "updated_by", "updated_by TEXT NOT NULL DEFAULT 'local'")
+    _ensure_column(conn, "wiki_revisions", "updated_by", "updated_by TEXT NOT NULL DEFAULT 'local'")
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS wiki_users (
+            name TEXT PRIMARY KEY,
+            is_seed INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL
+        )
+        """
+    )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS wiki_nav_categories (
+            id TEXT PRIMARY KEY,
+            title TEXT NOT NULL,
+            sort_order INTEGER NOT NULL DEFAULT 100,
+            is_seed INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            updated_by TEXT NOT NULL DEFAULT 'local'
+        )
+        """
+    )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS wiki_nav_items (
+            path TEXT PRIMARY KEY,
+            category_id TEXT NOT NULL,
+            title TEXT NOT NULL,
+            url TEXT NOT NULL,
+            sort_order INTEGER NOT NULL DEFAULT 100,
+            is_seed INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            updated_by TEXT NOT NULL DEFAULT 'local',
+            FOREIGN KEY(category_id) REFERENCES wiki_nav_categories(id) ON DELETE CASCADE
+        )
+        """
+    )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS wiki_comments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            page_path TEXT NOT NULL,
+            body TEXT NOT NULL,
+            author TEXT NOT NULL DEFAULT 'local',
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+        """
+    )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS wiki_page_seen (
+            page_path TEXT NOT NULL,
+            user_name TEXT NOT NULL,
+            seen_at TEXT NOT NULL,
+            PRIMARY KEY(page_path, user_name)
+        )
+        """
+    )
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_wiki_nav_items_category ON wiki_nav_items(category_id, sort_order)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_wiki_comments_page ON wiki_comments(page_path, id)")
+    _ensure_wiki_reference_data(conn)
     try:
         yield conn
         conn.commit()
@@ -224,6 +514,7 @@ def _read_editable_content(page_path: str) -> dict[str, Any]:
             "has_overlay": True,
             "upstream_changed": row["base_hash"] != current_base_hash,
             "updated_at": row["updated_at"],
+            "updated_by": row["updated_by"],
         }
 
     rel, title, seed_content = _seed_content_for_path(path)
@@ -237,10 +528,11 @@ def _read_editable_content(page_path: str) -> dict[str, Any]:
         "has_overlay": False,
         "upstream_changed": False,
         "updated_at": None,
+        "updated_by": None,
     }
 
 
-def _write_editable_content(page_path: str, content: str) -> str:
+def _write_editable_content(page_path: str, content: str, author: str | None = None) -> str:
     seed = _read_editable_content(page_path)
     path = seed["path"]
     title = seed["title"]
@@ -249,37 +541,38 @@ def _write_editable_content(page_path: str, content: str) -> str:
     now = _utc_now()
 
     with _db() as conn:
+        updated_by = _ensure_user(conn, author)
         existing = conn.execute("SELECT * FROM wiki_pages WHERE path = ?", (path,)).fetchone()
         if existing:
             conn.execute(
                 """
                 INSERT INTO wiki_revisions (path, content_html, base_hash, action, created_at, updated_by)
-                VALUES (?, ?, ?, 'update', ?, 'local')
+                VALUES (?, ?, ?, 'update', ?, ?)
                 """,
-                (path, existing["content_html"], existing["base_hash"], now),
+                (path, existing["content_html"], existing["base_hash"], now, updated_by),
             )
             conn.execute(
                 """
                 UPDATE wiki_pages
-                SET title = ?, content_html = ?, base_hash = ?, updated_at = ?, updated_by = 'local'
+                SET title = ?, content_html = ?, base_hash = ?, updated_at = ?, updated_by = ?
                 WHERE path = ?
                 """,
-                (title, clean_content, base_hash, now, path),
+                (title, clean_content, base_hash, now, updated_by, path),
             )
         else:
             conn.execute(
                 """
                 INSERT INTO wiki_pages (path, title, content_html, base_hash, source_type, created_at, updated_at, updated_by)
-                VALUES (?, ?, ?, ?, 'seed', ?, ?, 'local')
+                VALUES (?, ?, ?, ?, 'seed', ?, ?, ?)
                 """,
-                (path, title, clean_content, base_hash, now, now),
+                (path, title, clean_content, base_hash, now, now, updated_by),
             )
             conn.execute(
                 """
                 INSERT INTO wiki_revisions (path, content_html, base_hash, action, created_at, updated_by)
-                VALUES (?, ?, ?, 'create-overlay', ?, 'local')
+                VALUES (?, ?, ?, 'create-overlay', ?, ?)
                 """,
-                (path, seed["content"], seed["base_hash"], now),
+                (path, seed["content"], seed["base_hash"], now, updated_by),
             )
     return path
 
@@ -291,6 +584,168 @@ def _slugify(slug: str) -> str:
     if not slug:
         raise HTTPException(status_code=400, detail="Slug is required")
     return slug
+
+
+def _ordered_users(conn: sqlite3.Connection) -> list[dict[str, Any]]:
+    rows = conn.execute("SELECT name, is_seed, created_at FROM wiki_users").fetchall()
+    by_name = {row["name"]: row for row in rows}
+    ordered_names = [name for name in DEFAULT_WIKI_USERS_FIXED if name in by_name]
+    remaining = sorted(name for name in by_name if name not in DEFAULT_WIKI_USERS_FIXED)
+    ordered_names.extend(remaining)
+    return [
+        {
+            "name": name,
+            "is_seed": bool(by_name[name]["is_seed"]),
+            "created_at": by_name[name]["created_at"],
+        }
+        for name in ordered_names
+    ]
+
+
+def _page_update_info(conn: sqlite3.Connection, path: str) -> tuple[str | None, str | None]:
+    row = conn.execute("SELECT updated_at, updated_by FROM wiki_pages WHERE path = ?", (path,)).fetchone()
+    if row:
+        return row["updated_at"], row["updated_by"]
+    return None, None
+
+
+def _is_new_for_user(
+    *,
+    path: str,
+    is_seed: bool,
+    updated_at: str | None,
+    page_updated_at: str | None,
+    seen_at: str | None,
+) -> bool:
+    if path == "mvp":
+        return False
+    effective_updated_at = updated_at or page_updated_at
+    if not effective_updated_at:
+        return False
+    if seen_at:
+        return effective_updated_at > seen_at
+    if not is_seed:
+        return True
+    return bool(page_updated_at and page_updated_at > SEED_NAV_TIMESTAMP)
+
+
+def _list_nav(user: str | None = None) -> dict[str, Any]:
+    user_name = _normalize_author(user) if user else ""
+    with _db() as conn:
+        seen = {}
+        if user_name and user_name != "local":
+            seen = {
+                row["page_path"]: row["seen_at"]
+                for row in conn.execute("SELECT page_path, seen_at FROM wiki_page_seen WHERE user_name = ?", (user_name,)).fetchall()
+            }
+
+        overview_updated_at, overview_updated_by = _page_update_info(conn, "overview.html")
+        overview_seen_at = seen.get("overview.html")
+        overview = {
+            "path": "overview.html",
+            "title": "Overview",
+            "url": "/wiki/overview.html",
+            "is_seed": True,
+            "updated_at": overview_updated_at,
+            "updated_by": overview_updated_by,
+            "is_new": _is_new_for_user(
+                path="overview.html",
+                is_seed=True,
+                updated_at=overview_updated_at,
+                page_updated_at=overview_updated_at,
+                seen_at=overview_seen_at,
+            ),
+        }
+
+        categories = []
+        category_rows = conn.execute(
+            """
+            SELECT id, title, sort_order, is_seed, created_at, updated_at, updated_by
+            FROM wiki_nav_categories
+            ORDER BY sort_order, title COLLATE NOCASE
+            """
+        ).fetchall()
+        for category in category_rows:
+            item_rows = conn.execute(
+                """
+                SELECT
+                    i.path,
+                    i.title,
+                    i.url,
+                    i.sort_order,
+                    i.is_seed,
+                    i.created_at,
+                    i.updated_at,
+                    i.updated_by,
+                    p.updated_at AS page_updated_at,
+                    p.updated_by AS page_updated_by
+                FROM wiki_nav_items i
+                LEFT JOIN wiki_pages p ON p.path = i.path
+                WHERE i.category_id = ?
+                ORDER BY i.sort_order, i.title COLLATE NOCASE
+                """,
+                (category["id"],),
+            ).fetchall()
+            items = []
+            for item in item_rows:
+                if item["path"] == "mvp":
+                    continue
+                updated_at = item["page_updated_at"] or item["updated_at"]
+                updated_by = item["page_updated_by"] or item["updated_by"]
+                items.append(
+                    {
+                        "path": item["path"],
+                        "title": item["title"],
+                        "url": item["url"],
+                        "is_seed": bool(item["is_seed"]),
+                        "updated_at": updated_at,
+                        "updated_by": updated_by,
+                        "is_new": _is_new_for_user(
+                            path=item["path"],
+                            is_seed=bool(item["is_seed"]),
+                            updated_at=updated_at,
+                            page_updated_at=item["page_updated_at"],
+                            seen_at=seen.get(item["path"]),
+                        ),
+                    }
+                )
+            categories.append(
+                {
+                    "id": category["id"],
+                    "title": category["title"],
+                    "is_seed": bool(category["is_seed"]),
+                    "items": items,
+                }
+            )
+    mvp = {
+        "path": "mvp",
+        "title": "MVP Demo",
+        "url": "/mvp/",
+        "is_seed": True,
+        "updated_at": SEED_NAV_TIMESTAMP,
+        "updated_by": "seed",
+        "is_new": False,
+    }
+    return {"overview": overview, "categories": categories, "mvp": mvp}
+
+
+def _mark_page_seen(page_path: str, user: str | None) -> dict[str, Any]:
+    user_name = _normalize_author(user)
+    if user_name == "local":
+        return {"ok": True, "path": _normalize_nav_path(page_path), "user": user_name, "seen_at": None}
+    path = _normalize_nav_path(page_path)
+    now = _utc_now()
+    with _db() as conn:
+        _ensure_user(conn, user_name)
+        conn.execute(
+            """
+            INSERT INTO wiki_page_seen (page_path, user_name, seen_at)
+            VALUES (?, ?, ?)
+            ON CONFLICT(page_path, user_name) DO UPDATE SET seen_at = excluded.seen_at
+            """,
+            (path, user_name, now),
+        )
+    return {"ok": True, "path": path, "user": user_name, "seen_at": now}
 
 
 def _wiki_sidebar(active: str = "") -> str:
@@ -309,7 +764,7 @@ def _wiki_sidebar(active: str = "") -> str:
 
   <a href="/wiki/overview.html"{overview_attr()}>Overview</a>
 
-  <div class="category">Platform</div>
+  <div class="category">Core Pillars</div>
   <nav>
     <a href="/wiki/data-governance.html"{active_attr('/wiki/data-governance.html')}>Data Governance</a>
     <a href="/wiki/harness-engineering.html"{active_attr('/wiki/harness-engineering.html')}>Harness Engineering</a>
@@ -319,7 +774,6 @@ def _wiki_sidebar(active: str = "") -> str:
   <nav>
     <a href="/wiki/terminology.html"{active_attr('/wiki/terminology.html')}>용어 사전</a>
     <a href="/wiki/scenarios.html"{active_attr('/wiki/scenarios.html')}>사용 시나리오</a>
-    <a href="/mvp/">MVP Demo</a>
   </nav>
 
   <div class="category">Reference</div>
@@ -333,6 +787,8 @@ def _wiki_sidebar(active: str = "") -> str:
     <a href="/docs/ppt"{active_attr('/docs/ppt')}>PPT</a>
     <a href="/docs/one-pager"{active_attr('/docs/one-pager')}>One Pager</a>
   </nav>
+
+  <a href="/mvp/" class="category category-link mvp-entry">MVP Demo</a>
 </aside>
 """.strip()
 
@@ -346,7 +802,7 @@ def _page_template(title: str, main_content: str, active: str = "") -> str:
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{safe_title} - HR AX Platform Wiki</title>
 <link rel="icon" href="data:,">
-<link rel="stylesheet" href="/wiki/assets/style.css?v=2">
+<link rel="stylesheet" href="/wiki/assets/style.css?v=3">
 </head>
 <body>
 
@@ -356,7 +812,7 @@ def _page_template(title: str, main_content: str, active: str = "") -> str:
 {main_content.strip()}
 </main>
 
-<script src="/wiki/assets/wiki-editor.js?v=5"></script>
+<script src="/wiki/assets/wiki-editor.js?v=6"></script>
 </body>
 </html>
 """
@@ -612,6 +1068,58 @@ async def list_wiki_pages() -> dict[str, Any]:
     return {"pages": pages}
 
 
+@app.get("/api/wiki/users")
+async def list_wiki_users() -> dict[str, Any]:
+    with _db() as conn:
+        users = _ordered_users(conn)
+    return {"users": users}
+
+
+@app.post("/api/wiki/users")
+async def create_wiki_user(user: WikiUserCreate) -> dict[str, Any]:
+    name = _clean_label(user.name, max_length=40)
+    if not name:
+        raise HTTPException(status_code=400, detail="Name is required")
+    with _db() as conn:
+        conn.execute(
+            """
+            INSERT OR IGNORE INTO wiki_users (name, is_seed, created_at)
+            VALUES (?, 0, ?)
+            """,
+            (name, _utc_now()),
+        )
+        users = _ordered_users(conn)
+    return {"ok": True, "name": name, "users": users}
+
+
+@app.get("/api/wiki/nav")
+async def get_wiki_nav(user: str | None = None) -> dict[str, Any]:
+    return _list_nav(user)
+
+
+@app.post("/api/wiki/category")
+async def create_wiki_category(category: WikiCategoryCreate) -> dict[str, Any]:
+    title = _clean_label(category.title, max_length=60)
+    if not title:
+        raise HTTPException(status_code=400, detail="Category title is required")
+    category_id = _category_id_from_title(title)
+    now = _utc_now()
+    with _db() as conn:
+        author = _ensure_user(conn, category.author)
+        if conn.execute("SELECT 1 FROM wiki_nav_categories WHERE lower(title) = lower(?)", (title,)).fetchone():
+            raise HTTPException(status_code=409, detail="Category already exists")
+        max_sort = conn.execute("SELECT COALESCE(MAX(sort_order), 40) AS max_sort FROM wiki_nav_categories").fetchone()["max_sort"]
+        conn.execute(
+            """
+            INSERT INTO wiki_nav_categories
+                (id, title, sort_order, is_seed, created_at, updated_at, updated_by)
+            VALUES (?, ?, ?, 0, ?, ?, ?)
+            """,
+            (category_id, title, max_sort + 10, now, now, author),
+        )
+    return {"ok": True, "category": {"id": category_id, "title": title, "is_seed": False, "items": []}}
+
+
 @app.get("/api/wiki/page")
 async def get_wiki_page(path: str) -> dict[str, Any]:
     return _read_editable_content(path)
@@ -619,7 +1127,7 @@ async def get_wiki_page(path: str) -> dict[str, Any]:
 
 @app.put("/api/wiki/page")
 async def update_wiki_page(update: WikiUpdate) -> dict[str, Any]:
-    rel = _write_editable_content(update.path, update.content)
+    rel = _write_editable_content(update.path, update.content, update.author)
     return {"ok": True, "path": rel}
 
 
@@ -628,30 +1136,110 @@ async def create_wiki_page(page: WikiCreate) -> dict[str, Any]:
     slug = _slugify(page.slug)
     path = f"pages/{slug}.html"
 
-    title = page.title.strip()
+    title = _clean_label(page.title, max_length=120)
     if not title:
         raise HTTPException(status_code=400, detail="Title is required")
 
     content = _sanitize_content(page.content or f"<h1>{html.escape(title)}</h1>\n<p class=\"lead\">새 위키 페이지입니다. 편집 버튼으로 내용을 추가하세요.</p>")
     now = _utc_now()
     with _db() as conn:
+        author = _ensure_user(conn, page.author)
+        category_id = page.category_id or "concepts"
+        if not conn.execute("SELECT 1 FROM wiki_nav_categories WHERE id = ?", (category_id,)).fetchone():
+            raise HTTPException(status_code=400, detail="Unknown category")
         if conn.execute("SELECT 1 FROM wiki_pages WHERE path = ?", (path,)).fetchone():
             raise HTTPException(status_code=409, detail="Page already exists")
         conn.execute(
             """
             INSERT INTO wiki_pages (path, title, content_html, base_hash, source_type, created_at, updated_at, updated_by)
-            VALUES (?, ?, ?, ?, 'user', ?, ?, 'local')
+            VALUES (?, ?, ?, ?, 'user', ?, ?, ?)
             """,
-            (path, title, content, _hash_text(""), now, now),
+            (path, title, content, _hash_text(""), now, now, author),
         )
         conn.execute(
             """
             INSERT INTO wiki_revisions (path, content_html, base_hash, action, created_at, updated_by)
-            VALUES (?, ?, ?, 'create', ?, 'local')
+            VALUES (?, ?, ?, 'create', ?, ?)
             """,
-            (path, content, _hash_text(""), now),
+            (path, content, _hash_text(""), now, author),
+        )
+        max_sort = conn.execute(
+            "SELECT COALESCE(MAX(sort_order), 0) AS max_sort FROM wiki_nav_items WHERE category_id = ?",
+            (category_id,),
+        ).fetchone()["max_sort"]
+        conn.execute(
+            """
+            INSERT INTO wiki_nav_items
+                (path, category_id, title, url, sort_order, is_seed, created_at, updated_at, updated_by)
+            VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?)
+            """,
+            (path, category_id, title, _nav_url_for_path(path), max_sort + 10, now, now, author),
         )
     return {"ok": True, "path": path, "url": f"/wiki/{path}"}
+
+
+@app.get("/api/wiki/comments")
+async def list_wiki_comments(path: str) -> dict[str, Any]:
+    page_path = _normalize_edit_path(path)
+    if page_path == "mvp":
+        raise HTTPException(status_code=400, detail="Comments are not available for MVP")
+    with _db() as conn:
+        rows = conn.execute(
+            """
+            SELECT id, page_path, body, author, created_at, updated_at
+            FROM wiki_comments
+            WHERE page_path = ?
+            ORDER BY id ASC
+            """,
+            (page_path,),
+        ).fetchall()
+    comments = [
+        {
+            "id": row["id"],
+            "path": row["page_path"],
+            "body": row["body"],
+            "author": row["author"],
+            "created_at": row["created_at"],
+            "updated_at": row["updated_at"],
+        }
+        for row in rows
+    ]
+    return {"comments": comments}
+
+
+@app.post("/api/wiki/comments")
+async def create_wiki_comment(comment: WikiCommentCreate) -> dict[str, Any]:
+    page_path = _normalize_edit_path(comment.path)
+    body = _clean_body(comment.body, max_length=2000)
+    if not body:
+        raise HTTPException(status_code=400, detail="Comment body is required")
+    now = _utc_now()
+    with _db() as conn:
+        author = _ensure_user(conn, comment.author)
+        conn.execute(
+            """
+            INSERT INTO wiki_comments (page_path, body, author, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (page_path, body, author, now, now),
+        )
+        comment_id = conn.execute("SELECT last_insert_rowid() AS id").fetchone()["id"]
+    return {
+        "ok": True,
+        "comment": {
+            "id": comment_id,
+            "path": page_path,
+            "body": body,
+            "author": author,
+            "created_at": now,
+            "updated_at": now,
+        },
+    }
+
+
+@app.post("/api/wiki/seen")
+async def mark_wiki_seen(seen: WikiSeenUpdate) -> dict[str, Any]:
+    return _mark_page_seen(seen.path, seen.user)
 
 
 @app.get("/")

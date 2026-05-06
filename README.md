@@ -32,7 +32,7 @@ WIKI_DB_PATH=/app/data/wiki.sqlite
 저장 정책:
 
 - Git: 앱 코드, 디자인 시스템, 기본 Wiki seed 파일
-- SQLite: 사내망에서 수정한 Wiki 본문, 신규 페이지, revision 이력
+- SQLite: 사내망에서 수정한 Wiki 본문, 신규 페이지/카테고리, 사용자 목록, 페이지별 메모, revision/읽음 이력
 - MVP Demo: 편집 대상 아님
 
 ## 사내 LLM 기본값
@@ -52,7 +52,13 @@ MVP Demo는 별도 endpoint를 설정하지 않으면 같은 서버의 `/api/llm
 
 ## Editable Wiki
 
-Docker 실행 상태에서 Wiki 하단의 `Edit`, `Save`, `New Page` 버튼으로 내용을 수정하거나 페이지를 추가할 수 있습니다.
+Docker 실행 상태에서 Wiki를 수정할 수 있습니다.
+
+- 우상단 작성자 드롭다운: 수정자/메모 작성자를 선택합니다. 목록에 없으면 `+`로 추가합니다.
+- 좌측 사이드바 하단: `+ Page`, `+ Category`로 페이지와 카테고리를 추가합니다.
+- 본문 상단 편집 툴바: 현재 페이지 본문을 `Edit`, `Save`, `Cancel`로 수정합니다.
+- 우측 접힘 메모 패널: 페이지별 메모를 작성자 라벨과 함께 남깁니다.
+- 사이드바 `NEW` 배지: 사용자별 읽음 상태를 기준으로 새 페이지/변경 페이지를 표시합니다.
 
 편집 가능:
 
