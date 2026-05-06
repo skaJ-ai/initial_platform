@@ -12,8 +12,13 @@ services:
       - "0.0.0.0:26000:26000"
     volumes:
       # App seed files come from Git. Runtime wiki edits are kept outside the repo.
-      - ./final:/app/final:ro
-      - ${WIKI_DATA_DIR:-C:/dev/HR-AX-WIKI-DATA}:/app/data
+      - type: bind
+        source: ./final
+        target: /app/final
+        read_only: true
+      - type: bind
+        source: ${WIKI_DATA_DIR:-C:/dev/HR-AX-WIKI-DATA}
+        target: /app/data
     environment:
       PORT: "26000"
       WIKI_DB_PATH: "/app/data/wiki.sqlite"
