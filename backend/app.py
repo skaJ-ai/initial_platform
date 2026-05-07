@@ -926,7 +926,7 @@ def _page_template(title: str, main_content: str, active: str = "") -> str:
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{safe_title} — {safe_site_title}</title>
 <link rel="icon" href="/wiki/assets/wiki-icon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="/wiki/assets/style.css?v=10">
+<link rel="stylesheet" href="/wiki/assets/style.css?v=11">
 </head>
 <body>
 
@@ -936,7 +936,7 @@ def _page_template(title: str, main_content: str, active: str = "") -> str:
 {main_content.strip()}
 </main>
 
-<script src="/wiki/assets/wiki-editor.js?v=13"></script>
+<script src="/wiki/assets/wiki-editor.js?v=14"></script>
 </body>
 </html>
 """
