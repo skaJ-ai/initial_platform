@@ -28,6 +28,10 @@ final/mvp-demo/BUILD_SPEC.md
 handoff_codex.md
 Handoff_claude.md
 
+# 설계 인계 문서 (LLM 작업용, 영구 기록 X)
+*-design.md
+docs/design/
+
 # Local runtime wiki DB
 .local/
 wiki-data/
