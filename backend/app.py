@@ -40,10 +40,13 @@ DEFAULT_WIKI_USERS_SORTED = [
     "윤서완",
     "이소정",
 ]
+SITE_TITLE = "HR AX Platform — Concept & MVP Sharing"
+USER_PAGE_DEFAULT_CATEGORY = "working-notes"
+OLD_SEED_CATEGORY_IDS = ("platform", "con" "cepts", "reference")
 DEFAULT_WIKI_NAV = [
     {
-        "id": "platform",
-        "title": "Core Pillars",
+        "id": "pillars",
+        "title": "Pillars",
         "sort_order": 10,
         "items": [
             {"path": "data-governance.html", "title": "Data Governance", "url": "/wiki/data-governance.html", "sort_order": 10},
@@ -51,21 +54,22 @@ DEFAULT_WIKI_NAV = [
         ],
     },
     {
-        "id": "concepts",
-        "title": "Concepts",
+        "id": "shared-language",
+        "title": "Shared Language",
         "sort_order": 20,
         "items": [
             {"path": "terminology.html", "title": "용어 사전", "url": "/wiki/terminology.html", "sort_order": 10},
-            {"path": "scenarios.html", "title": "사용 시나리오", "url": "/wiki/scenarios.html", "sort_order": 20},
+            {"path": "faq.html", "title": "FAQ", "url": "/wiki/faq.html", "sort_order": 20},
         ],
     },
     {
-        "id": "reference",
-        "title": "Reference",
+        "id": USER_PAGE_DEFAULT_CATEGORY,
+        "title": "Working Notes",
         "sort_order": 30,
         "items": [
-            {"path": "faq.html", "title": "FAQ", "url": "/wiki/faq.html", "sort_order": 10},
-            {"path": "next-actions.html", "title": "다음 액션", "url": "/wiki/next-actions.html", "sort_order": 20},
+            {"path": "scenarios.html", "title": "사용 시나리오", "url": "/wiki/scenarios.html", "sort_order": 10},
+            {"path": "open-questions.html", "title": "Open Questions", "url": "/wiki/open-questions.html", "sort_order": 20},
+            {"path": "next-actions.html", "title": "다음 액션", "url": "/wiki/next-actions.html", "sort_order": 30},
         ],
     },
     {
@@ -92,7 +96,7 @@ ALLOWED_ORIGINS = [
     if origin.strip()
 ]
 
-app = FastAPI(title="HR AX Platform Wiki", version="1.0.0")
+app = FastAPI(title=SITE_TITLE, version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -235,6 +239,40 @@ def _ensure_user(conn: sqlite3.Connection, author: str | None) -> str:
 
 def _ensure_wiki_reference_data(conn: sqlite3.Connection) -> None:
     now = _utc_now()
+    conn.execute(
+        """
+        INSERT OR IGNORE INTO wiki_nav_categories
+            (id, title, sort_order, is_seed, created_at, updated_at, updated_by)
+        VALUES (?, 'Working Notes', 30, 1, ?, ?, 'seed')
+        """,
+        (USER_PAGE_DEFAULT_CATEGORY, SEED_NAV_TIMESTAMP, SEED_NAV_TIMESTAMP),
+    )
+    conn.execute(
+        f"""
+        UPDATE wiki_nav_items
+        SET category_id = ?
+        WHERE category_id IN ({",".join("?" * len(OLD_SEED_CATEGORY_IDS))})
+            AND is_seed = 0
+        """,
+        (USER_PAGE_DEFAULT_CATEGORY, *OLD_SEED_CATEGORY_IDS),
+    )
+    current_ids = tuple(category["id"] for category in DEFAULT_WIKI_NAV)
+    conn.execute(
+        f"""
+        DELETE FROM wiki_nav_categories
+        WHERE is_seed = 1 AND id NOT IN ({",".join("?" * len(current_ids))})
+        """,
+        current_ids,
+    )
+    current_paths = tuple(item["path"] for category in DEFAULT_WIKI_NAV for item in category["items"])
+    conn.execute(
+        f"""
+        DELETE FROM wiki_nav_items
+        WHERE is_seed = 1 AND path NOT IN ({",".join("?" * len(current_paths))})
+        """,
+        current_paths,
+    )
+
     for name in DEFAULT_WIKI_USERS_FIXED + DEFAULT_WIKI_USERS_SORTED:
         conn.execute(
             """
@@ -295,7 +333,8 @@ def _ensure_wiki_reference_data(conn: sqlite3.Connection) -> None:
         """
     ).fetchall()
     max_sort = conn.execute(
-        "SELECT COALESCE(MAX(sort_order), 999) AS max_sort FROM wiki_nav_items WHERE category_id = 'concepts'"
+        "SELECT COALESCE(MAX(sort_order), 999) AS max_sort FROM wiki_nav_items WHERE category_id = ?",
+        (USER_PAGE_DEFAULT_CATEGORY,),
     ).fetchone()["max_sort"]
     for row in rows:
         if conn.execute("SELECT 1 FROM wiki_nav_items WHERE path = ?", (row["path"],)).fetchone():
@@ -305,10 +344,11 @@ def _ensure_wiki_reference_data(conn: sqlite3.Connection) -> None:
             """
             INSERT INTO wiki_nav_items
                 (path, category_id, title, url, sort_order, is_seed, created_at, updated_at, updated_by)
-            VALUES (?, 'concepts', ?, ?, ?, 0, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?)
             """,
             (
                 row["path"],
+                USER_PAGE_DEFAULT_CATEGORY,
                 row["title"],
                 _nav_url_for_path(row["path"]),
                 max_sort,
@@ -572,6 +612,16 @@ def _write_editable_content(page_path: str, content: str, author: str | None = N
         updated_by = _ensure_user(conn, author)
         existing = conn.execute("SELECT * FROM wiki_pages WHERE path = ?", (path,)).fetchone()
         if existing:
+            if existing["source_type"] != "user" and not clean_content:
+                conn.execute(
+                    """
+                    INSERT INTO wiki_revisions (path, content_html, base_hash, action, created_at, updated_by)
+                    VALUES (?, ?, ?, 'reset-overlay', ?, ?)
+                    """,
+                    (path, existing["content_html"], existing["base_hash"], now, updated_by),
+                )
+                conn.execute("DELETE FROM wiki_pages WHERE path = ?", (path,))
+                return path
             conn.execute(
                 """
                 INSERT INTO wiki_revisions (path, content_html, base_hash, action, created_at, updated_by)
@@ -588,6 +638,8 @@ def _write_editable_content(page_path: str, content: str, author: str | None = N
                 (title, clean_content, base_hash, now, updated_by, path),
             )
         else:
+            if not clean_content:
+                return path
             conn.execute(
                 """
                 INSERT INTO wiki_pages (path, title, content_html, base_hash, source_type, created_at, updated_at, updated_by)
@@ -827,25 +879,29 @@ def _wiki_sidebar(active: str = "") -> str:
 
     return f"""
 <aside class="sidebar">
-  <a href="/wiki/overview.html" class="logo">HR AX Platform</a>
+  <a href="/wiki/overview.html" class="logo">
+    HR AX Platform
+    <span class="logo-sub">Concept &amp; MVP Sharing</span>
+  </a>
 
   <a href="/wiki/overview.html"{overview_attr()}>Overview</a>
 
-  <div class="category">Core Pillars</div>
+  <div class="category">Pillars</div>
   <nav>
     <a href="/wiki/data-governance.html"{active_attr('/wiki/data-governance.html')}>Data Governance</a>
     <a href="/wiki/harness-engineering.html"{active_attr('/wiki/harness-engineering.html')}>Harness Engineering</a>
   </nav>
 
-  <div class="category">Concepts</div>
+  <div class="category">Shared Language</div>
   <nav>
     <a href="/wiki/terminology.html"{active_attr('/wiki/terminology.html')}>용어 사전</a>
-    <a href="/wiki/scenarios.html"{active_attr('/wiki/scenarios.html')}>사용 시나리오</a>
+    <a href="/wiki/faq.html"{active_attr('/wiki/faq.html')}>FAQ</a>
   </nav>
 
-  <div class="category">Reference</div>
+  <div class="category">Working Notes</div>
   <nav>
-    <a href="/wiki/faq.html"{active_attr('/wiki/faq.html')}>FAQ</a>
+    <a href="/wiki/scenarios.html"{active_attr('/wiki/scenarios.html')}>사용 시나리오</a>
+    <a href="/wiki/open-questions.html"{active_attr('/wiki/open-questions.html')}>Open Questions</a>
     <a href="/wiki/next-actions.html"{active_attr('/wiki/next-actions.html')}>다음 액션</a>
   </nav>
 
@@ -855,19 +911,20 @@ def _wiki_sidebar(active: str = "") -> str:
     <a href="/docs/one-pager"{active_attr('/docs/one-pager')}>One Pager</a>
   </nav>
 
-  <a href="/mvp/" class="category category-link mvp-entry">MVP Demo</a>
+  <a href="/mvp/" class="category category-link mvp-entry">MVP Demo <span class="mvp-tag">(preview)</span></a>
 </aside>
 """.strip()
 
 
 def _page_template(title: str, main_content: str, active: str = "") -> str:
     safe_title = html.escape(title)
+    safe_site_title = html.escape(SITE_TITLE)
     return f"""<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{safe_title} - HR AX Platform Wiki</title>
+<title>{safe_title} — {safe_site_title}</title>
 <link rel="icon" href="/wiki/assets/wiki-icon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/wiki/assets/style.css?v=10">
 </head>
@@ -1348,7 +1405,7 @@ async def create_wiki_page(page: WikiCreate) -> dict[str, Any]:
     now = _utc_now()
     with _db() as conn:
         author = _ensure_user(conn, page.author)
-        category_id = page.category_id or "concepts"
+        category_id = page.category_id or USER_PAGE_DEFAULT_CATEGORY
         if not conn.execute("SELECT 1 FROM wiki_nav_categories WHERE id = ?", (category_id,)).fetchone():
             raise HTTPException(status_code=400, detail="Unknown category")
         if conn.execute("SELECT 1 FROM wiki_pages WHERE path = ?", (path,)).fetchone():

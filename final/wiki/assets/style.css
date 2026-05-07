@@ -1,4 +1,4 @@
-/* HR AX Platform Wiki - Design System light theme */
+/* HR AX Platform Concept & MVP Sharing - Design System light theme */
 
 @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
 
@@ -150,11 +150,13 @@ aside.sidebar {
 aside.sidebar .logo {
   position: relative;
   display: flex;
+  flex-direction: column;
   min-height: 46px;
-  align-items: center;
-  gap: 10px;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2px;
   margin-bottom: 16px;
-  padding: 4px 8px 14px 46px;
+  padding: 4px 8px 8px 46px;
   color: var(--color-accent);
   font-family: var(--font-headline);
   font-size: 15px;
@@ -182,21 +184,20 @@ aside.sidebar .logo::before {
   content: '';
 }
 
-aside.sidebar .logo::after {
-  position: absolute;
-  left: 46px;
-  bottom: 2px;
-  color: var(--color-text-secondary);
-  content: 'Ideation wiki';
-  font-family: var(--font-sans);
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0;
-  text-transform: none;
-}
-
 aside.sidebar .logo span {
   color: var(--color-accent);
+}
+
+aside.sidebar .logo .logo-sub {
+  display: block;
+  color: var(--color-text-secondary);
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0;
+  line-height: 1.2;
+  opacity: 0.65;
+  text-transform: none;
 }
 
 aside.sidebar .category {
@@ -302,6 +303,14 @@ aside.sidebar .mvp-entry {
   border-top: 1px solid var(--color-border-subtle);
   padding-top: 16px;
   color: var(--color-accent);
+}
+
+aside.sidebar .mvp-tag {
+  color: var(--color-text-tertiary);
+  font-size: 0.7em;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 .sidebar-manage {

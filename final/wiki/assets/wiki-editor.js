@@ -213,8 +213,8 @@
     });
     if (current && select.querySelector(`option[value="${CSS.escape(current)}"]`)) {
       select.value = current;
-    } else if (select.querySelector('option[value="concepts"]')) {
-      select.value = 'concepts';
+    } else if (select.querySelector('option[value="working-notes"]')) {
+      select.value = 'working-notes';
     }
   }
 
@@ -320,7 +320,7 @@
       const task = handleManageClick(button, action);
       if (task && typeof task.catch === 'function') {
         task.catch((err) => {
-          window.alert(`Wiki 관리 실패: ${err.message || err}`);
+          window.alert(`Concept 관리 실패: ${err.message || err}`);
           setManageStatus(`Failed: ${err.message || err}`, 'error');
         });
       }
@@ -350,7 +350,7 @@
     if (!manage.dataset.ready) {
       manage.dataset.ready = 'true';
       manage.innerHTML = `
-        <div class="sidebar-manage-title">Wiki Manage</div>
+        <div class="sidebar-manage-title">Concept Manage</div>
         <div class="manage-section author-section">
           <label class="manage-label" id="wiki-author-label">작성자</label>
           <div class="sidebar-author-row">
