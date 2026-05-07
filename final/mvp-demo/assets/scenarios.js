@@ -69,12 +69,20 @@ const ROUTE_STEPS_SENSITIVE_REVIEW = [
   { label: "모델 호출", delay: 800, status: "live", detail: "Chat GPT 응답 스트리밍" }
 ];
 
-const DEFAULT_ROUTE_STEPS = [
+const ROUTE_STEPS_GENERAL_RECRUIT = [
   { label: "권한 확인", delay: 200, status: "ok", detail: "MX People · 채용" },
   { label: "민감도 분류", delay: 500, status: "ok", detail: "일반 (공개 시장 정보)" },
   { label: "라우팅 결정", delay: 100, status: "ok", detail: "사외 LLM 그대로" },
   { label: "비식별화 게이트", delay: 0, status: "skip", detail: "일반 등급: 미적용" },
   { label: "모델 호출", delay: 800, status: "live", detail: "Chat GPT 응답 스트리밍" }
+];
+
+const DEFAULT_ROUTE_STEPS = [
+  { label: "권한 확인", delay: 200, status: "ok", detail: "MX People · 일반 권한 범위 (추정)" },
+  { label: "민감도 분류", delay: 500, status: "ok", detail: "추정 — 일반" },
+  { label: "라우팅 결정", delay: 100, status: "ok", detail: "사외 LLM 그대로 (추정)" },
+  { label: "비식별화 게이트", delay: 0, status: "skip", detail: "일반 등급: 미적용" },
+  { label: "모델 호출", delay: 800, status: "live", detail: "응답 스트리밍" }
 ];
 
 const ROUTE_STEPS_CONFIDENTIAL_EXECUTIVE = [
@@ -205,7 +213,7 @@ const SCENARIOS = [
       model: "사외 LLM 그대로",
       reason: "공개 정보, 임직원 정보 미포함"
     },
-    routeSteps: DEFAULT_ROUTE_STEPS,
+    routeSteps: ROUTE_STEPS_GENERAL_RECRUIT,
     samplePrompt: "올해 IT 업계 채용시장 트렌드 정리해줘. 우리 직무군 중심으로.",
     sampleAgentReply: "IT 채용시장 트렌드 (sample):\n\n• AI 엔지니어 수요 급증 (전년 대비 +40%)\n• 데이터 직군 채용 정체\n• 풀스택 개발자 선호도 상승\n\n→ 우리 직무군 영향: AI/ML 직군 채용 가속 필요"
   },

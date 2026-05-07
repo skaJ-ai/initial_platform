@@ -203,8 +203,10 @@ async function sendChatMessage(input, sendButton) {
       assembly,
       onToken: () => {}
     });
-    fallbackUsed = !card && isGenericLlmFallback(reply);
-    if (fallbackUsed) reply = window.HRAX_DATA.DEFAULT_SAMPLE_REPLY;
+    if (isGenericLlmFallback(reply)) {
+      fallbackUsed = true;
+      reply = card?.sampleAgentReply || window.HRAX_DATA.DEFAULT_SAMPLE_REPLY;
+    }
   } catch (error) {
     fallbackUsed = true;
     reply = card?.sampleAgentReply || window.HRAX_DATA.DEFAULT_SAMPLE_REPLY;
