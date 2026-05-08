@@ -336,11 +336,16 @@ aside.sidebar .mvp-tag {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  margin-bottom: 10px;
+  flex-shrink: 0;
+  margin: 0 0 12px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-elevated);
+  padding: 10px;
 }
 
 .sidebar-author-control label {
-  padding: 0 6px;
+  padding: 0;
   color: var(--color-text-tertiary);
   font-size: 11px;
   font-weight: 800;
@@ -393,7 +398,7 @@ aside.sidebar .mvp-tag {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: calc(100% + 8px);
+  top: calc(100% + 8px);
   z-index: 180;
   display: flex;
   max-height: min(360px, 48vh);

@@ -2,12 +2,14 @@
   const apiBase = '/api/wiki';
   const editableDocPaths = new Set(['/docs/ppt', '/docs/one-pager']);
   const isHttp = location.protocol === 'http:' || location.protocol === 'https:';
+  const authorStorageKey = 'hrax.wiki.author';
   const state = {
     users: [],
     nav: null,
     currentUser: '',
     comments: [],
     pageMeta: null,
+    authorEl: null,
     manageEl: null,
     pageBar: null,
     commentEditor: null,
@@ -70,6 +72,31 @@
 
   function currentUserLabel() {
     return currentUser() || '선택하기';
+  }
+
+  function storedAuthor() {
+    try {
+      return window.localStorage.getItem(authorStorageKey) || '';
+    } catch (err) {
+      return '';
+    }
+  }
+
+  function persistAuthor(author) {
+    try {
+      if (author) {
+        window.localStorage.setItem(authorStorageKey, author);
+      } else {
+        window.localStorage.removeItem(authorStorageKey);
+      }
+    } catch (err) {
+      // localStorage can be unavailable in restricted browser contexts.
+    }
+  }
+
+  function setCurrentUser(author, persist = true) {
+    state.currentUser = author || '';
+    if (persist) persistAuthor(state.currentUser);
   }
 
   function requireCurrentUser(actionLabel) {
@@ -140,7 +167,7 @@
     if (!isHttp) return;
     const data = await apiFetch('/users');
     state.users = Array.isArray(data.users) ? data.users : [];
-    state.currentUser = '';
+    setCurrentUser(storedAuthor(), false);
   }
 
   async function addUser() {
@@ -152,7 +179,7 @@
       body: JSON.stringify({ name: name.trim() }),
     });
     state.users = data.users || state.users;
-    state.currentUser = data.name;
+    setCurrentUser(data.name);
     updateManageUserSelects();
     updateCommentAuthorLabel();
     renderComments();
@@ -160,7 +187,7 @@
   }
 
   function closeAuthorPicker() {
-    const picker = state.manageEl && state.manageEl.querySelector('[data-author-picker]');
+    const picker = state.authorEl && state.authorEl.querySelector('[data-author-picker]');
     if (!picker) return;
     const toggle = picker.querySelector('[data-author-toggle]');
     const menu = picker.querySelector('[data-author-options]');
@@ -169,7 +196,7 @@
   }
 
   function updateAuthorPicker() {
-    const picker = state.manageEl && state.manageEl.querySelector('[data-author-picker]');
+    const picker = state.authorEl && state.authorEl.querySelector('[data-author-picker]');
     if (!picker) return;
     const label = picker.querySelector('[data-author-label]');
     const menu = picker.querySelector('[data-author-options]');
@@ -185,7 +212,12 @@
     placeholder.textContent = '선택하기';
     menu.appendChild(placeholder);
 
-    state.users.forEach((user) => {
+    const users = [...state.users];
+    if (currentUser() && !users.some((user) => user.name === currentUser())) {
+      users.unshift({ name: currentUser() });
+    }
+
+    users.forEach((user) => {
       const option = document.createElement('button');
       option.type = 'button';
       option.className = 'author-option';
@@ -275,10 +307,6 @@
   }
 
   function initManageEvents(manage) {
-    document.addEventListener('click', (event) => {
-      if (!manage.contains(event.target)) closeAuthorPicker();
-    });
-
     manage.addEventListener('input', (event) => {
       if (event.target.matches('[data-new-page-title]')) {
         const slugInput = manage.querySelector('[data-new-page-slug]');
@@ -292,6 +320,28 @@
     });
 
     manage.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-action], [data-user-add], [data-create-page], [data-cancel-page]');
+      if (!button) return;
+      const action = button.dataset.action;
+      const task = handleManageClick(button, action);
+      if (task && typeof task.catch === 'function') {
+        task.catch((err) => {
+          window.alert(`Concept 관리 실패: ${err.message || err}`);
+          setManageStatus(`Failed: ${err.message || err}`, 'error');
+        });
+      }
+    });
+  }
+
+  function initAuthorEvents(authorControl) {
+    if (authorControl.dataset.ready) return;
+    authorControl.dataset.ready = 'true';
+
+    document.addEventListener('click', (event) => {
+      if (!authorControl.contains(event.target)) closeAuthorPicker();
+    });
+
+    authorControl.addEventListener('click', (event) => {
       const toggle = event.target.closest('[data-author-toggle]');
       if (toggle) {
         const picker = toggle.closest('[data-author-picker]');
@@ -305,7 +355,7 @@
 
       const authorOption = event.target.closest('[data-author-value]');
       if (authorOption) {
-        state.currentUser = authorOption.dataset.authorValue || '';
+        setCurrentUser(authorOption.dataset.authorValue || '');
         updateManageUserSelects();
         updateCommentAuthorLabel();
         renderComments();
@@ -314,14 +364,10 @@
         return;
       }
 
-      const button = event.target.closest('[data-action], [data-user-add], [data-create-page], [data-cancel-page]');
-      if (!button) return;
-      const action = button.dataset.action;
-      const task = handleManageClick(button, action);
-      if (task && typeof task.catch === 'function') {
-        task.catch((err) => {
-          window.alert(`Concept 관리 실패: ${err.message || err}`);
-          setManageStatus(`Failed: ${err.message || err}`, 'error');
+      const addButton = event.target.closest('[data-user-add]');
+      if (addButton) {
+        addUser().catch((err) => {
+          window.alert(`사용자 추가 실패: ${err.message || err}`);
         });
       }
     });
@@ -344,6 +390,30 @@
     if (action === 'sidebar-category') await createCategoryFromPrompt();
   }
 
+  function renderAuthorControl(sidebar, existingAuthor) {
+    const authorControl = existingAuthor || document.createElement('div');
+    authorControl.className = 'sidebar-author-control';
+    if (!authorControl.dataset.ready) {
+      authorControl.innerHTML = `
+        <label class="manage-label" id="wiki-author-label">작성자</label>
+        <div class="sidebar-author-row">
+          <div class="author-picker" data-author-picker>
+            <button type="button" class="author-picker-button" data-author-toggle aria-haspopup="listbox" aria-expanded="false" aria-labelledby="wiki-author-label">
+              <span data-author-label>선택하기</span>
+              <span class="author-picker-caret" aria-hidden="true">▾</span>
+            </button>
+            <div class="author-picker-menu" data-author-options role="listbox" hidden></div>
+          </div>
+          <button type="button" class="btn-wiki icon" data-user-add title="사용자 추가">+</button>
+        </div>
+      `;
+      initAuthorEvents(authorControl);
+    }
+    state.authorEl = authorControl;
+    updateManageUserSelects();
+    sidebar.appendChild(authorControl);
+  }
+
   function renderSidebarActions(sidebar, categories, existingManage) {
     const manage = existingManage || document.createElement('div');
     manage.className = 'sidebar-manage';
@@ -351,19 +421,6 @@
       manage.dataset.ready = 'true';
       manage.innerHTML = `
         <div class="sidebar-manage-title">Concept Manage</div>
-        <div class="manage-section author-section">
-          <label class="manage-label" id="wiki-author-label">작성자</label>
-          <div class="sidebar-author-row">
-            <div class="author-picker" data-author-picker>
-              <button type="button" class="author-picker-button" data-author-toggle aria-haspopup="listbox" aria-expanded="false" aria-labelledby="wiki-author-label">
-                <span data-author-label>선택하기</span>
-                <span class="author-picker-caret" aria-hidden="true">▴</span>
-              </button>
-              <div class="author-picker-menu" data-author-options role="listbox" hidden></div>
-            </div>
-            <button type="button" class="btn-wiki icon" data-user-add title="사용자 추가">+</button>
-          </div>
-        </div>
         <div class="manage-section create-section">
           <div class="manage-section-title">Create</div>
           <div class="sidebar-tools">
@@ -625,7 +682,9 @@
     const sidebar = document.querySelector('aside.sidebar');
     if (!sidebar || !navData) return;
 
+    const existingAuthor = state.authorEl || sidebar.querySelector('.sidebar-author-control');
     const existingManage = state.manageEl || sidebar.querySelector('.sidebar-manage');
+    if (existingAuthor && existingAuthor.parentElement) existingAuthor.remove();
     if (existingManage && existingManage.parentElement) existingManage.remove();
 
     sidebar.innerHTML = '';
@@ -634,6 +693,8 @@
     logo.className = 'logo';
     logo.textContent = 'HR AX Platform';
     sidebar.appendChild(logo);
+
+    renderAuthorControl(sidebar, existingAuthor);
 
     const scrollArea = document.createElement('div');
     scrollArea.className = 'sidebar-scroll';
