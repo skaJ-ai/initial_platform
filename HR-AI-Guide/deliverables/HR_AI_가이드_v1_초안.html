@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>HR Enterprise LLM 사용 가이드 (v1 초안)</title>
+<style>
+  * { box-sizing: border-box; }
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  body {
+    font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", "맑은 고딕", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    max-width: 780px;
+    margin: 56px auto;
+    padding: 0 28px 80px;
+    color: #1f2937;
+    font-size: 16px;
+    line-height: 1.9;
+    letter-spacing: -0.01em;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+    text-rendering: optimizeLegibility;
+  }
+  h1 {
+    font-size: 26px;
+    font-weight: 700;
+    border-bottom: 2px solid #1f2937;
+    padding-bottom: 16px;
+    margin: 0 0 10px;
+    letter-spacing: -0.025em;
+    line-height: 1.4;
+  }
+  .meta {
+    color: #6b7280;
+    font-size: 13px;
+    margin-bottom: 40px;
+    letter-spacing: 0;
+    line-height: 1.7;
+  }
+  h2 {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 40px 0 16px;
+    color: #111827;
+    padding-left: 12px;
+    border-left: 4px solid #2563eb;
+    letter-spacing: -0.02em;
+    line-height: 1.5;
+  }
+  p {
+    margin: 10px 0;
+    text-wrap: pretty;
+  }
+  h2, h1 {
+    text-wrap: balance;
+  }
+  .group-gap {
+    margin-top: 22px;
+  }
+  ul {
+    margin: 14px 0 14px 0;
+    padding-left: 24px;
+  }
+  ul li {
+    margin-bottom: 12px;
+  }
+  ul li::marker {
+    color: #94a3b8;
+  }
+  .key-msg {
+    font-weight: 700;
+    color: #111827;
+  }
+  strong {
+    font-weight: 700;
+    color: #111827;
+  }
+  em {
+    font-style: italic;
+    color: #1f2937;
+  }
+  .item {
+    margin: 16px 0;
+    padding-left: 4px;
+  }
+  .item .circ {
+    font-weight: 700;
+    margin-right: 6px;
+    font-size: 18px;
+    color: #111827;
+  }
+  .note {
+    font-style: italic;
+    color: #4b5563;
+    font-size: 14.5px;
+    line-height: 1.8;
+  }
+  .keyword {
+    background: #f3f4f6;
+    border-left: 3px solid #94a3b8;
+    padding: 12px 18px;
+    margin: 16px 0;
+    font-size: 14.5px;
+    color: #374151;
+    line-height: 1.85;
+    border-radius: 2px;
+  }
+  .danger-tag {
+    color: #dc2626;
+    font-weight: 700;
+    font-size: 13.5px;
+    margin: 0 2px;
+    letter-spacing: 0;
+  }
+  hr {
+    margin: 48px 0 24px;
+    border: 0;
+    border-top: 1px solid #e5e7eb;
+  }
+  .footer {
+    font-style: italic;
+    color: #6b7280;
+    font-size: 13.5px;
+    text-align: center;
+    margin-top: 28px;
+    line-height: 1.7;
+  }
+  @media print {
+    body { margin: 24px auto; }
+  }
+</style>
+</head>
+<body>
+
+<h1>HR Enterprise LLM 사용 가이드</h1>
+<div class="meta">초안 v1 · 2026-05-13 작성 · 빨간색 <span class="danger-tag">(... 최종 확인 필요)</span> 마커는 검토 완료 시 제거</div>
+
+<h2>1. 목적</h2>
+<p>6월 00일부터 외부 Enterprise LLM(Gemini·Claude·ChatGPT)이<br>사내에서 전격 오픈됩니다.</p>
+<p>HR 업무에도 LLM을 적극 활용하실 수 있도록<br>어떤 데이터를 어떻게 쓰면 되는지 안내드립니다.</p>
+<p><span class="key-msg">핵심은 단 하나 — 기밀 2종의 입력만 피하시면 됩니다.</span></p>
+
+<h2>2. 가이드의 대상</h2>
+<p>사내에서 <em>기밀 데이터 취급자(세부 나열 필요)</em>로 별도 분류되신 분들은<br>외부 Enterprise LLM 자체를 사용하실 수 없습니다.</p>
+<p>이 가이드는 그 외 일반 HR 담당자를 위한 안내입니다.</p>
+<p class="group-gap">회사 자동 마스킹 솔루션이<br>법적 12종(고유식별정보 등)은 차단합니다. <span class="danger-tag">(12종 최종 확인 필요)</span></p>
+<p>다만 이는 전사 공통 기준이며,<br><span class="key-msg">HR 특화 기밀인 협의회·노조 관련 내용은 자동으로 잡히지 않으므로<br>본인이 직접 입력하지 않도록 유의</span>해 주시기 바랍니다.</p>
+
+<h2>3. 사용 가능 범위</h2>
+<p>기밀 2종을 제외한 모든 HR 데이터는<br>외부 Enterprise LLM에서 활용하실 수 있습니다.</p>
+<p>사번을 포함한 일반 인사 데이터,<br>채용·평가·교육 등 제도 운영 업무,<br>보고서·이메일 초안 작성, 정책 검토와 자료 분석 등<br>일상적인 HR 업무 전반에 자유롭게 활용하시기 바랍니다.</p>
+
+<h2>4. 금지 대상 — 기밀 2종</h2>
+<div class="item"><span class="circ">①</span> <strong>고유식별정보 DB</strong> — 주민등록번호, 외국인등록번호, 여권번호 등. <span class="note">법적 12종에 해당하며 회사 자동 마스킹 솔루션으로 차단됩니다.</span></div>
+<div class="item"><span class="circ">②</span> <strong>협의회/노조 관련 일체</strong> — 노조·노사협의회·단체교섭 관련 안건·발언·회의록·협상안, 그리고 조합 가입 여부 자체. <span class="note">자동 마스킹이 적용되지 않으므로 본인이 직접 입력하지 않도록 유의해 주시기 바랍니다.</span></div>
+<div class="keyword">키워드 예시: 노조, 노동조합, 노사협의회, 단체교섭, 임단협, 조합원, 협상안, 회의록</div>
+<p class="note">기밀 분류는 추후 확대될 수 있으며, 변경 시 별도 안내드립니다.</p>
+
+<h2>5. 왜 안전한가</h2>
+<p>회사가 도입하는 Enterprise LLM에는 다음 안전장치가 적용되어 있습니다.</p>
+<ul>
+  <li><strong>외부 학습에 사용되지 않습니다.</strong> 입력하신 내용이 외부 사업자의 모델 학습에 활용되지 않도록 설정되어 있습니다.</li>
+  <li><strong>외부로 노출되지 않습니다.</strong> 사내 계정 단위로 접근이 통제된 환경에서 운영되어, 입력 내용이 사외로 나가는 경로가 없습니다.</li>
+  <li><strong>불특정 다수가 임의로 열람할 수 없습니다.</strong> 입력 내용은 본인 외에는 사내 누구도 접근할 수 없으며, 사용 로그만이 정보보호센터에서 별도 관리됩니다. (자세한 내용은 다음 섹션)</li>
+</ul>
+
+<h2>6. 로그·모니터링 안내</h2>
+<p>외부 LLM 운영에 따라 사용 로그가 함께 남으며,<br>이 로그는 정보보호센터에서 관리합니다.</p>
+<p>회사는 이를<br><span class="key-msg">필요 최소한의 범위에서 가장 안전한 방식</span>으로 처리합니다.</p>
+<p class="group-gap">구체적으로,<br><span class="key-msg">보안서약서를 작성한 정보보호센터의 지정 담당자</span>만이<br>로그에 접근할 수 있습니다.</p>
+<p>외부 LLM 사업자, 사내 다른 부서, 그 외 누구도<br>입력 내용을 확인할 수 없습니다.</p>
+<p class="group-gap">그럼에도 이 단 하나의 경로마저 마음에 걸리는 데이터라면,<br>입력 전 한 번 더 검토해 보시거나<br>AX&amp;CI Lab에 문의해 주시기 바랍니다.</p>
+
+<h2>7. 개인정보 처리 관련</h2>
+<p>본 LLM 사용에 따른 개인정보 처리 사항은<br>법무 검토를 거쳐 적법성을 확보하였습니다. <span class="danger-tag">(법무검토 최종확인 필요)</span></p>
+
+<h2>8. 문의</h2>
+<p>처리 판단이 모호하거나 추가 문의가 필요한 경우<br><strong>AX&amp;CI Lab</strong>으로 연락 주시기 바랍니다.</p>
+
+<hr>
+<div class="footer">본 가이드는 전사 「AI 활용 보안가이드」 제4·5호의 HR 시행기준입니다.</div>
+
+</body>
+</html>
