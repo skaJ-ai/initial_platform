@@ -1,185 +1,936 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<title>HR Enterprise LLM 사용 가이드 (v1 초안)</title>
-<style>
-  * { box-sizing: border-box; }
-  html {
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
-  body {
-    font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", "맑은 고딕", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    max-width: 780px;
-    margin: 56px auto;
-    padding: 0 28px 80px;
-    color: #1f2937;
-    font-size: 16px;
-    line-height: 1.9;
-    letter-spacing: -0.01em;
-    word-break: keep-all;
-    overflow-wrap: break-word;
-    text-rendering: optimizeLegibility;
-  }
-  h1 {
-    font-size: 26px;
-    font-weight: 700;
-    border-bottom: 2px solid #1f2937;
-    padding-bottom: 16px;
-    margin: 0 0 10px;
-    letter-spacing: -0.025em;
-    line-height: 1.4;
-  }
-  .meta {
-    color: #6b7280;
-    font-size: 13px;
-    margin-bottom: 40px;
-    letter-spacing: 0;
-    line-height: 1.7;
-  }
-  h2 {
-    font-size: 18px;
-    font-weight: 700;
-    margin: 40px 0 16px;
-    color: #111827;
-    padding-left: 12px;
-    border-left: 4px solid #2563eb;
-    letter-spacing: -0.02em;
-    line-height: 1.5;
-  }
-  p {
-    margin: 10px 0;
-    text-wrap: pretty;
-  }
-  h2, h1 {
-    text-wrap: balance;
-  }
-  .group-gap {
-    margin-top: 22px;
-  }
-  ul {
-    margin: 14px 0 14px 0;
-    padding-left: 24px;
-  }
-  ul li {
-    margin-bottom: 12px;
-  }
-  ul li::marker {
-    color: #94a3b8;
-  }
-  .key-msg {
-    font-weight: 700;
-    color: #111827;
-  }
-  strong {
-    font-weight: 700;
-    color: #111827;
-  }
-  em {
-    font-style: italic;
-    color: #1f2937;
-  }
-  .item {
-    margin: 16px 0;
-    padding-left: 4px;
-  }
-  .item .circ {
-    font-weight: 700;
-    margin-right: 6px;
-    font-size: 18px;
-    color: #111827;
-  }
-  .note {
-    font-style: italic;
-    color: #4b5563;
-    font-size: 14.5px;
-    line-height: 1.8;
-  }
-  .keyword {
-    background: #f3f4f6;
-    border-left: 3px solid #94a3b8;
-    padding: 12px 18px;
-    margin: 16px 0;
-    font-size: 14.5px;
-    color: #374151;
-    line-height: 1.85;
-    border-radius: 2px;
-  }
-  .danger-tag {
-    color: #dc2626;
-    font-weight: 700;
-    font-size: 13.5px;
-    margin: 0 2px;
-    letter-spacing: 0;
-  }
-  hr {
-    margin: 48px 0 24px;
-    border: 0;
-    border-top: 1px solid #e5e7eb;
-  }
-  .footer {
-    font-style: italic;
-    color: #6b7280;
-    font-size: 13.5px;
-    text-align: center;
-    margin-top: 28px;
-    line-height: 1.7;
-  }
-  @media print {
-    body { margin: 24px auto; }
-  }
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HR Enterprise LLM 사용 가이드 v1 초안</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --panel: #ffffff;
+      --text: #172033;
+      --muted: #667085;
+      --line: #d7dce5;
+      --dark: #101828;
+      --blue: #175cd3;
+      --blue-bg: #eff8ff;
+      --red: #b42318;
+      --red-bg: #fff2f1;
+      --yellow: #b54708;
+      --yellow-bg: #fffaeb;
+      --green: #027a48;
+      --green-bg: #ecfdf3;
+      --shadow: 0 6px 18px rgba(16, 24, 40, .07);
+      --radius: 8px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", Arial, sans-serif;
+      line-height: 1.62;
+      word-break: keep-all;
+      overflow-wrap: break-word;
+    }
+    a { color: var(--blue); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .wrap { max-width: 1160px; margin: 0 auto; padding: 0 20px; }
+    header {
+      background: linear-gradient(135deg, #111827 0%, #26364f 58%, #175cd3 100%);
+      color: #fff;
+      padding: 34px 0 54px;
+    }
+    h1 { margin: 0 0 10px; font-size: 34px; line-height: 1.2; letter-spacing: 0; }
+    header p { margin: 0; max-width: 860px; color: #e6eefc; font-size: 16px; }
+    .meta { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 18px; }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 30px;
+      border: 1px solid rgba(255,255,255,.26);
+      border-radius: 999px;
+      padding: 5px 11px;
+      background: rgba(255,255,255,.09);
+      color: #fff;
+      font-size: 13px;
+    }
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(245, 247, 251, .96);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(8px);
+    }
+    nav .navline {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      white-space: nowrap;
+      padding: 9px 20px;
+    }
+    nav a {
+      display: inline-flex;
+      align-items: center;
+      min-height: 32px;
+      padding: 6px 11px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fff;
+      color: #344054;
+      font-size: 13px;
+    }
+    main { margin-top: -28px; }
+    section { padding: 22px 0; }
+    h2 { margin: 0 0 14px; font-size: 24px; line-height: 1.35; letter-spacing: 0; }
+    h3 { margin: 0 0 8px; font-size: 18px; line-height: 1.4; letter-spacing: 0; }
+    h4 { margin: 18px 0 8px; font-size: 15px; }
+    p { margin: 0 0 12px; }
+    ul, ol { margin: 8px 0 0 20px; padding: 0; }
+    li { margin: 4px 0; }
+    table { width: 100%; border-collapse: separate; border-spacing: 0; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; background: #fff; }
+    th, td { padding: 12px 14px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; font-size: 14px; }
+    th { background: #f8fafc; color: #344054; font-weight: 800; }
+    tr:last-child td { border-bottom: 0; }
+    pre {
+      margin: 8px 0 0;
+      white-space: pre-wrap;
+      overflow: auto;
+      border-radius: var(--radius);
+      background: #101828;
+      color: #eef4ff;
+      padding: 13px;
+      font-size: 13px;
+      line-height: 1.55;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 22px;
+    }
+    .grid { display: grid; gap: 14px; }
+    .grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grid.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .muted { color: var(--muted); }
+    .small { font-size: 13px; }
+    .strong { font-weight: 800; color: #111827; }
+    .callout {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+      padding: 15px;
+    }
+    .callout.red { background: var(--red-bg); border-color: #fda29b; }
+    .callout.yellow { background: var(--yellow-bg); border-color: #fedf89; }
+    .callout.green { background: var(--green-bg); border-color: #abefc6; }
+    .callout.blue { background: var(--blue-bg); border-color: #b2ddff; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      min-height: 26px;
+      border-radius: 999px;
+      padding: 4px 9px;
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1;
+      white-space: nowrap;
+    }
+    .badge.red { background: var(--red-bg); color: var(--red); border: 1px solid #fda29b; }
+    .badge.yellow { background: var(--yellow-bg); color: var(--yellow); border: 1px solid #fedf89; }
+    .badge.green { background: var(--green-bg); color: var(--green); border: 1px solid #abefc6; }
+    .badge.blue { background: var(--blue-bg); color: var(--blue); border: 1px solid #b2ddff; }
+    .search-box {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-top: 14px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+    }
+    .search-box input {
+      flex: 1;
+      min-width: 0;
+      border: 0;
+      outline: 0;
+      padding: 11px;
+      font-size: 17px;
+      color: var(--text);
+    }
+    button {
+      min-height: 42px;
+      border: 0;
+      border-radius: var(--radius);
+      padding: 10px 14px;
+      background: var(--dark);
+      color: #fff;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    button.secondary {
+      border: 1px solid var(--line);
+      background: #f2f4f7;
+      color: #344054;
+    }
+    .chips { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 12px; }
+    .chip {
+      min-height: 32px;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: #344054;
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .chip:hover { border-color: #98a2b3; background: #f9fafb; }
+    .rule-card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+      padding: 16px;
+    }
+    .flow {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr auto 1fr;
+      gap: 9px;
+      margin-top: 14px;
+      align-items: stretch;
+    }
+    .flow .step {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+      padding: 15px;
+    }
+    .arrow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #98a2b3;
+      font-weight: 800;
+      font-size: 22px;
+    }
+    .checklist { display: grid; gap: 9px; }
+    .checkitem {
+      display: grid;
+      grid-template-columns: 28px 1fr auto;
+      gap: 10px;
+      align-items: start;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+      padding: 12px;
+    }
+    .checkitem input { width: 19px; height: 19px; margin-top: 3px; }
+    .result-card {
+      margin-top: 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .result-head {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      justify-content: space-between;
+      padding: 16px;
+      border-bottom: 1px solid var(--line);
+    }
+    .result-body {
+      display: grid;
+      grid-template-columns: 1.12fr .88fr;
+      gap: 16px;
+      padding: 16px;
+    }
+    .example {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #f8fafc;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+    .example strong { display: block; margin-top: 8px; }
+    .example strong:first-child { margin-top: 0; }
+    mark { background: #fff3bf; border-radius: 3px; padding: 0 2px; }
+    details {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+      padding: 14px;
+      margin-top: 10px;
+    }
+    summary { cursor: pointer; font-weight: 800; color: #344054; }
+    .footer { padding: 34px 0 46px; color: #667085; font-size: 13px; }
+    .kbd {
+      display: inline-flex;
+      border: 1px solid #d0d5dd;
+      border-radius: 6px;
+      background: #f2f4f7;
+      padding: 0 6px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+    @media (max-width: 920px) {
+      .grid.two, .grid.three, .grid.four, .result-body { grid-template-columns: 1fr; }
+      .flow { grid-template-columns: 1fr; }
+      .arrow { transform: rotate(90deg); }
+    }
+    @media (max-width: 680px) {
+      h1 { font-size: 28px; }
+      header { padding-bottom: 44px; }
+      .search-box { flex-direction: column; align-items: stretch; }
+      .search-box button { width: 100%; }
+      .checkitem { grid-template-columns: 28px 1fr; }
+      .checkitem .check-result { grid-column: 2; }
+      .result-head { display: block; }
+      .result-head .badge:last-child { margin-top: 10px; }
+    }
+    @media print {
+      body { background: #fff; }
+      header, nav, .chips, .search-box button { display: none !important; }
+      main { margin-top: 0; }
+      .wrap { max-width: none; }
+      .card, .result-card { box-shadow: none; }
+    }
+  </style>
 </head>
 <body>
+<header>
+  <div class="wrap">
+    <h1>HR Enterprise LLM 사용 가이드</h1>
+    <p>Enterprise LLM 사용 전 HR 데이터의 입력 가능 여부를 검색하고, 고유식별정보·노사/협의회 자료·임직원 개인정보를 안전하게 처리하기 위한 실무 가이드입니다.</p>
+    <div class="meta">
+      <span class="pill">초안 v1 · 2026-05-17</span>
+      <span class="pill">대상: Enterprise LLM 사용 권한 보유 HR 담당자</span>
+      <span class="pill">문의: AX&amp;CI Lab</span>
+      <span class="pill">정적 HTML · LLM 미연동</span>
+    </div>
+  </div>
+</header>
 
-<h1>HR Enterprise LLM 사용 가이드</h1>
-<div class="meta">초안 v1 · 2026-05-13 작성 · 빨간색 <span class="danger-tag">(... 최종 확인 필요)</span> 마커는 검토 완료 시 제거</div>
+<nav>
+  <div class="wrap navline">
+    <a href="#search">검색</a>
+    <a href="#principle">핵심 원칙</a>
+    <a href="#checklist">자가점검</a>
+    <a href="#masking">가공 기준</a>
+    <a href="#examples">업무별 예시</a>
+    <a href="#incident">오입력 대응</a>
+    <a href="#appendix">별첨</a>
+  </div>
+</nav>
 
-<h2>1. 목적</h2>
-<p>6월 00일부터 외부 Enterprise LLM(Gemini·Claude·ChatGPT)이<br>사내에서 전격 오픈됩니다.</p>
-<p>HR 업무에도 LLM을 적극 활용하실 수 있도록<br>어떤 데이터를 어떻게 쓰면 되는지 안내드립니다.</p>
-<p><span class="key-msg">핵심은 단 하나 — 기밀 2종의 입력만 피하시면 됩니다.</span></p>
+<main>
+  <section id="search">
+    <div class="wrap">
+      <div class="card">
+        <h2>먼저 검색하세요</h2>
+        <p class="muted">키워드나 질문을 입력하면 하드코딩된 사전 기준으로 등급, 입력 가능 여부, 가공 방법, 안전한 프롬프트 예시를 보여줍니다.</p>
+        <div class="search-box" role="search">
+          <input id="query" type="search" autocomplete="off" placeholder="예: 노사협의회, 주민번호, 사번, 평가 코멘트, 급여, 휴직, 면접 메모, 엑셀 업로드" aria-label="검색어 입력" />
+          <button id="searchBtn" type="button">검색</button>
+          <button id="resetBtn" class="secondary" type="button">초기화</button>
+        </div>
+        <div class="chips" id="chips"></div>
+        <div id="results" aria-live="polite"></div>
+      </div>
+    </div>
+  </section>
 
-<h2>2. 가이드의 대상</h2>
-<p>사내에서 <em>기밀 데이터 취급자(세부 나열 필요)</em>로 별도 분류되신 분들은<br>외부 Enterprise LLM 자체를 사용하실 수 없습니다.</p>
-<p>이 가이드는 그 외 일반 HR 담당자를 위한 안내입니다.</p>
-<p class="group-gap">회사 자동 마스킹 솔루션이 법적 12종(고유식별정보 등)은 차단합니다. <span class="danger-tag">(12종 최종 확인 필요)</span></p>
-<p>다만 이는 전사 공통 기준이며,<br><span class="key-msg">HR 특화 기밀인 협의회·노조 관련 내용은 자동으로 잡히지 않으므로<br>본인이 직접 입력하지 않도록 유의</span>해 주시기 바랍니다.</p>
+  <section id="principle">
+    <div class="wrap">
+      <div class="card">
+        <h2>핵심 원칙</h2>
+        <div class="callout blue">
+          <strong>금지가 목적이 아닙니다. 원문 대신 안전한 입력값을 만드는 것이 목적입니다.</strong><br />
+          AX팀 협의 기준상 HR 기밀 데이터는 고유식별정보와 노사/협의회 관련 자료 2종입니다. 다만 임직원 개인정보의 Enterprise LLM 활용 범위는 법무 검토 중이므로, 검토 완료 전까지는 원문 개인정보를 입력하지 않고 마스킹·가명처리·범주화·맥락 추상화 후 사용합니다.
+        </div>
 
-<h2>3. 사용 가능 범위</h2>
-<p>기밀 2종을 제외한 모든 HR 데이터는 외부 Enterprise LLM에서 활용하실 수 있습니다.</p>
-<p>사번을 포함한 일반 인사 데이터,<br>채용·평가·교육 등 제도 운영 업무,<br>보고서·이메일 초안 작성, 정책 검토와 자료 분석 등<br>일상적인 HR 업무 전반에 자유롭게 활용하시기 바랍니다.</p>
+        <div class="grid three" style="margin-top:14px">
+          <div class="rule-card">
+            <span class="badge red">RED / 입력 금지</span>
+            <h3>기밀 2종과 금지 행위</h3>
+            <p>고유식별정보, 노사/협의회 관련 자료, 개인 계정 업무 사용, AI에게 인사결정 자체를 맡기는 행위는 금지합니다.</p>
+          </div>
+          <div class="rule-card">
+            <span class="badge yellow">YELLOW / 가공 후 사용</span>
+            <h3>임직원·지원자 개인정보</h3>
+            <p>이름, 사번, 연락처, 평가, 보상, 채용, 휴직, 건강, 징계 등은 원문 입력하지 않고 필요한 수준까지 가공합니다.</p>
+          </div>
+          <div class="rule-card">
+            <span class="badge green">GREEN / 사용 가능</span>
+            <h3>일반 업무 질의</h3>
+            <p>회사·개인·조직을 특정할 정보가 없는 일반 문안, 템플릿, 공개 법령, 교육자료, 채용 JD 초안은 사용할 수 있습니다.</p>
+          </div>
+        </div>
 
-<h2>4. 금지 대상 — 기밀 2종</h2>
-<div class="item"><span class="circ">①</span> <strong>고유식별정보 DB</strong> — 주민등록번호, 외국인등록번호, 여권번호 등. <span class="note">법적 12종에 해당하며 회사 자동 마스킹 솔루션으로 차단됩니다.</span></div>
-<div class="item"><span class="circ">②</span> <strong>협의회/노조 관련 일체</strong> — 노조·노사협의회·단체교섭 관련 안건·발언·회의록·협상안, 그리고 조합 가입 여부 자체. <span class="note">자동 마스킹이 적용되지 않으므로 본인이 직접 입력하지 않도록 유의해 주시기 바랍니다.</span></div>
-<div class="keyword">키워드 예시: 노조, 노동조합, 노사협의회, 단체교섭, 임단협, 조합원, 협상안, 회의록</div>
-<p class="note">기밀 분류는 추후 확대될 수 있으며, 변경 시 별도 안내드립니다.</p>
+        <div class="flow">
+          <div class="step">
+            <span class="badge red">1단계</span>
+            <h3>기밀 2종인가?</h3>
+            <p>고유식별정보 또는 노사/협의회 관련 내용이면 입력하지 않습니다.</p>
+          </div>
+          <div class="arrow">→</div>
+          <div class="step">
+            <span class="badge yellow">2단계</span>
+            <h3>개인정보인가?</h3>
+            <p>개인을 알아볼 수 있거나 조합하면 특정될 수 있으면 먼저 가공합니다.</p>
+          </div>
+          <div class="arrow">→</div>
+          <div class="step">
+            <span class="badge green">3단계</span>
+            <h3>일반화됐는가?</h3>
+            <p>사람·조직·사건이 특정되지 않는 일반 질의로 바뀐 뒤 입력합니다.</p>
+          </div>
+        </div>
 
-<h2>5. 왜 안전한가</h2>
-<p>회사가 도입하는 Enterprise LLM에는 다음 안전장치가 적용되어 있습니다.</p>
-<ul>
-  <li><strong>외부 학습에 사용되지 않습니다.</strong> 입력하신 내용이 외부 사업자의 모델 학습에 활용되지 않도록 설정되어 있습니다.</li>
-  <li><strong>외부로 노출되지 않습니다.</strong> 사내 계정 단위로 접근이 통제된 환경에서 운영되어, 입력 내용이 사외로 나가는 경로가 없습니다.</li>
-  <li><strong>불특정 다수가 임의로 열람할 수 없습니다.</strong> 입력 내용은 본인 외에는 사내 누구도 접근할 수 없으며, 사용 로그만이 정보보호센터에서 별도 관리됩니다. (자세한 내용은 다음 섹션)</li>
-</ul>
+        <div class="callout yellow" style="margin-top:14px">
+          <strong>자동 필터링 솔루션의 한계</strong><br />
+          정보보호센터의 전사 필터링 솔루션은 2026년 6월 중 도입 예정이며, 고유식별정보·API Key 등 전사 공통 위험정보를 차단하는 역할입니다. HR 특화 기밀인 노사/협의회 자료와 조합식별 위험, 그리고 여러 HR 속성의 결합으로 발생하는 재식별 위험은 사용자가 직접 판단해야 합니다.
+        </div>
+      </div>
+    </div>
+  </section>
 
-<h2>6. 로그·모니터링 안내</h2>
-<p>외부 LLM 운영에 따라 사용 로그가 함께 남으며, 이 로그는 정보보호센터에서 관리합니다.</p>
-<p>회사는 이를 <span class="key-msg">필요 최소한의 범위에서 가장 안전한 방식</span>으로 처리합니다.</p>
-<p class="group-gap">구체적으로, <span class="key-msg">보안서약서를 작성한 정보보호센터의 지정 담당자</span>만이 로그에 접근할 수 있습니다.</p>
-<p>외부 LLM 사업자, 사내 다른 부서, 그 외 누구도 입력 내용을 확인할 수 없습니다.</p>
-<p class="group-gap">그럼에도 이 단 하나의 경로마저 마음에 걸리는 데이터라면,<br>입력 전 한 번 더 검토해 보시거나<br>AX&amp;CI Lab에 문의해 주시기 바랍니다.</p>
+  <section id="checklist">
+    <div class="wrap">
+      <div class="card">
+        <h2>LLM 입력 전 5단계 자가점검</h2>
+        <p class="muted">하나라도 해당하면 원문 그대로 입력하지 않습니다.</p>
+        <div class="checklist">
+          <label class="checkitem"><input type="checkbox" /><span>주민등록번호, 여권번호, 운전면허번호, 외국인등록번호가 포함되어 있는가?</span><span class="check-result"><span class="badge red">입력 금지</span></span></label>
+          <label class="checkitem"><input type="checkbox" /><span>노조, 노동조합, 노사협의회, 단체교섭, 임단협, 조합원, 협상안, 회의록, 발언 내용이 포함되어 있는가?</span><span class="check-result"><span class="badge red">입력 금지</span></span></label>
+          <label class="checkitem"><input type="checkbox" /><span>실명, 사번, 이메일, 전화번호, 주소, 사진, 계좌번호처럼 개인을 바로 알아볼 정보가 있는가?</span><span class="check-result"><span class="badge yellow">제거·대체</span></span></label>
+          <label class="checkitem"><input type="checkbox" /><span>부서, 직책, 연차, 성별, 연령대, 학교, 전 직장, 평가등급, 휴직 정보 등 3개 이상 속성이 결합되어 특정인을 추정할 수 있는가?</span><span class="check-result"><span class="badge yellow">범주화·분리</span></span></label>
+          <label class="checkitem"><input type="checkbox" /><span>회사 승인 Enterprise 계정이 아닌 개인 계정, 무료 계정, 개인 구독 계정으로 접속했는가?</span><span class="check-result"><span class="badge red">사용 금지</span></span></label>
+          <label class="checkitem"><input type="checkbox" /><span>AI에게 지원자 선발, 평가등급, 보상 인상률, 징계 수위처럼 인사결정 자체를 요청하는가?</span><span class="check-result"><span class="badge red">행위 금지</span></span></label>
+        </div>
+      </div>
+    </div>
+  </section>
 
-<h2>7. 개인정보 처리 관련</h2>
-<p>본 LLM 사용에 따른 개인정보 처리 사항은 법무 검토를 거쳐 적법성을 확보하였습니다. <span class="danger-tag">(법무검토 최종확인 필요)</span></p>
+  <section id="masking">
+    <div class="wrap">
+      <div class="card">
+        <h2>개인정보 가공 기준</h2>
+        <p class="muted">법무 검토 완료 전까지 임직원·지원자 개인정보는 원문 입력이 아니라 아래 방식으로 가공한 뒤 필요한 범위에서만 사용합니다.</p>
+        <div class="grid four">
+          <div class="rule-card">
+            <span class="badge yellow">Level 1</span>
+            <h3>직접 식별자 제거</h3>
+            <p>이름, 사번, 이메일, 전화번호, 주소, 사진, 계좌번호를 삭제하거나 임시 코드로 대체합니다.</p>
+          </div>
+          <div class="rule-card">
+            <span class="badge yellow">Level 2</span>
+            <h3>범주화</h3>
+            <p>생년월일은 연령대, 정확한 급여는 구간, 근속기간은 범위, 날짜는 분기나 월 단위로 바꿉니다.</p>
+          </div>
+          <div class="rule-card">
+            <span class="badge yellow">Level 3</span>
+            <h3>맥락 추상화</h3>
+            <p>부서명, 임원명, 프로젝트명, 특정 사건, 소수 조직, M&amp;A 상대방을 일반 상황으로 바꿉니다.</p>
+          </div>
+          <div class="rule-card">
+            <span class="badge blue">문의</span>
+            <h3>판단 보류</h3>
+            <p>건강, 장애, 징계, 고충, 조사, 법적 분쟁, 소수자 조합은 일반 질의로 바꾸거나 AX&amp;CI Lab에 문의합니다.</p>
+          </div>
+        </div>
 
-<h2>8. 문의</h2>
-<p>처리 판단이 모호하거나 추가 문의가 필요한 경우 <strong>AX&amp;CI Lab</strong>으로 연락 주시기 바랍니다.</p>
+        <div style="overflow:auto; margin-top:14px">
+          <table>
+            <thead><tr><th>원문</th><th>입력 전 처리</th><th>주의</th></tr></thead>
+            <tbody>
+              <tr><td>홍길동, EMP2021-0023</td><td>직원 A, EMP-001</td><td>같은 세션 내 가명은 일관되게 사용</td></tr>
+              <tr><td>1980년 3월 15일생</td><td>40대 초반</td><td>정확한 생년월일 제거</td></tr>
+              <tr><td>영업1팀 과장, 8년 3개월 근속</td><td>영업 직군 중간관리자, 7~10년 경력</td><td>조직·직책·연차 결합 축소</td></tr>
+              <tr><td>연봉 4,820만원</td><td>연봉 4,500~5,000만원 구간</td><td>정확한 금액 제거</td></tr>
+              <tr><td>무단결근 3회로 3차 경고</td><td>근태 이슈가 반복된 일반 사례</td><td>실제 사건 경위와 당사자 정보 제거</td></tr>
+              <tr><td>노사협의회 실제 안건과 발언</td><td>입력 금지</td><td>일반적인 회의 운영 원칙만 질의</td></tr>
+            </tbody>
+          </table>
+        </div>
 
-<hr>
-<div class="footer">본 가이드는 전사 「AI 활용 보안가이드」 제4·5호의 HR 시행기준입니다.</div>
+        <div class="callout red" style="margin-top:14px">
+          <strong>중요한 문장</strong><br />
+          민감값을 입력한 뒤 “답변에는 포함하지 말라”고 지시하는 것은 가공이 아닙니다. AI가 보지 않아야 할 값은 프롬프트와 첨부파일에 처음부터 넣지 않습니다.
+        </div>
+      </div>
+    </div>
+  </section>
 
+  <section id="examples">
+    <div class="wrap">
+      <div class="card">
+        <h2>업무별 빠른 기준</h2>
+        <div style="overflow:auto">
+          <table>
+            <thead><tr><th>업무 영역</th><th>사용 가능한 방식</th><th>원문 입력 금지·주의 요소</th></tr></thead>
+            <tbody>
+              <tr><td>채용·면접</td><td>JD 초안, 면접 질문, 결과 안내 메일</td><td>지원자명, 연락처, 학교명, 전 직장명, 면접점수, 평판조회 원문</td></tr>
+              <tr><td>성과평가</td><td>평가 기준, 피드백 표현 개선, 코칭 가이드</td><td>실명·사번·부서·등급·점수·비교 대상 조합</td></tr>
+              <tr><td>급여·보상</td><td>보상 기준 안내문, 시장 벤치마크 방법론</td><td>개인별 정확한 급여, 계좌, 평가등급과 급여 조합</td></tr>
+              <tr><td>휴직·복리후생</td><td>제도 안내문, FAQ, 신청 절차 설명</td><td>특정인의 휴직 사유, 건강·가족 정보, 신청 내역 원문</td></tr>
+              <tr><td>징계·고충</td><td>일반 절차, 문서 양식, 체크리스트</td><td>당사자명, 사건 경위, 진술, 증거, 처분 검토 원문</td></tr>
+              <tr><td>노무</td><td>공개 법령, 일반 노동법 해석, 일반 협상 전략</td><td>노사협의회 내용, 단체교섭 자료, 조합원 정보, 협상안</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="grid two" style="margin-top:14px">
+          <div class="callout red">
+            <h3>피해야 할 방식</h3>
+            <pre>홍길동(EMP2021-023, 영업1팀 과장)의 2024년 성과 점수가 C등급인데 개선 방안을 알려줘.</pre>
+          </div>
+          <div class="callout green">
+            <h3>권장 방식</h3>
+            <pre>영업 직군 중간관리자급 직원이 올해 낮은 성과 평가를 받았을 때, 성과 개선 계획(PIP)을 작성하는 일반적인 방법을 알려줘.</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="incident">
+    <div class="wrap">
+      <div class="card">
+        <h2>실수로 입력했을 때</h2>
+        <p class="muted">오입력 후에는 내용을 추가로 붙여넣거나 다른 사람에게 전달하지 말고, 아래 순서로 정리합니다.</p>
+        <ol>
+          <li>해당 대화에 추가 입력을 즉시 중단합니다.</li>
+          <li>AI 서비스명, 입력 시각, 입력한 데이터 유형, 첨부파일 여부를 기록합니다.</li>
+          <li>대화 내용이나 파일을 임의로 재공유하지 않습니다.</li>
+          <li><strong>AX&amp;CI Lab</strong>에 즉시 문의합니다. 개인정보·보안 사안이면 정보보호센터 또는 개인정보보호책임자(CPO) 판단을 받습니다.</li>
+          <li>삭제 요청, 제공사 문의, 후속 신고 여부는 담당 부서 안내에 따릅니다.</li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <section id="appendix">
+    <div class="wrap">
+      <div class="card">
+        <h2>별첨</h2>
+
+        <details open>
+          <summary>별첨 1. 사용 권한과 적용 대상</summary>
+          <p>이 가이드는 회사 승인 Enterprise LLM 사용 권한이 있는 HR 담당자를 대상으로 합니다. 노사/협의회 관련 데이터를 취급하는 일부 부문 People 인력처럼 애초에 Enterprise LLM 사용 권한이 없는 경우에는 본 가이드의 조건부 사용 기준이 아니라 사용 권한 제한 기준을 우선 적용합니다.</p>
+        </details>
+
+        <details>
+          <summary>별첨 2. 전사 보안가이드와의 연결</summary>
+          <ol>
+            <li>승인된 기업용 AI 서비스만 업무에 활용합니다.</li>
+            <li>회사 제공 Enterprise 계정만 사용하고 개인 계정은 사용하지 않습니다.</li>
+            <li>비인가 브라우저 확장 프로그램과 외부 AI Agent 설치를 제한합니다.</li>
+            <li>기밀 데이터는 Enterprise LLM에도 입력하지 않습니다.</li>
+            <li>개인정보와 민감정보는 원문 대신 가명처리 또는 비식별 처리 후 활용합니다.</li>
+            <li>첨부파일 업로드 전 숨겨진 시트, 필터 영역, 메모, 피벗 원본을 확인합니다.</li>
+            <li>중요 동작은 Human-in-the-Loop 기준에 따라 사람이 최종 실행합니다.</li>
+            <li>AI 결과물은 사실 여부, 저작권, 라이선스 침해 여부를 검토한 뒤 사용합니다.</li>
+          </ol>
+        </details>
+
+        <details>
+          <summary>별첨 3. 법무 검토 전 임시 기준</summary>
+          <p>임직원 대상 개인정보 활용 동의가 Enterprise LLM 이용까지 포괄하는지 법무 검토가 진행 중입니다. 검토 완료 전까지는 개인정보 원문을 입력하지 않고, 마스킹·가명처리·범주화·맥락 추상화 후 필요한 범위에서만 사용합니다. 법무 검토 결과에 따라 본 문서는 업데이트됩니다.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="wrap">
+    <p>본 문서는 HR 담당자용 Enterprise LLM 사용 가이드 초안입니다. 실제 배포 전 AX&amp;CI Lab, 정보보호센터, 법무 검토 결과를 반영해야 합니다.</p>
+  </div>
+</footer>
+
+<script>
+const guideData = [
+  {
+    id: 'unique-id',
+    level: 'red',
+    label: 'RED / 입력 금지',
+    title: '고유식별정보',
+    category: '기밀 2종',
+    action: '입력 금지',
+    treatment: '원문·첨부파일 모두 입력 금지',
+    keywords: ['주민번호','주민등록번호','여권번호','운전면허번호','외국인등록번호','고유식별정보','신분증','rrn','여권','외국인','운전면허'],
+    reason: '주민등록번호, 여권번호, 운전면허번호, 외국인등록번호는 법상 고유식별정보이며 HR 기밀 데이터입니다. 자동 필터링 여부와 무관하게 사용자가 입력하지 않아야 합니다.',
+    blocked: ['주민등록번호 전체 또는 일부','여권번호','운전면허번호','외국인등록번호','신분증 사본','해당 값이 포함된 입사·급여·인사 파일'],
+    transform: ['Enterprise LLM에 입력하지 않습니다.','파일에 포함된 경우 업로드하지 않습니다.','실제 값 없이 일반적인 서류 검수 절차만 질문합니다.'],
+    before: '[직원명] / 주민등록번호 / 여권번호가 포함된 입사자 명단',
+    after: '입력 금지. 실제 데이터 없이 일반 체크리스트만 질의',
+    prompt: '실제 입사자 정보나 고유식별정보를 포함하지 않고, 입사 서류 검수 시 확인해야 할 일반 체크리스트를 알려주세요.'
+  },
+  {
+    id: 'labor-council-union',
+    level: 'red',
+    label: 'RED / 입력 금지',
+    title: '노사/협의회 관련 자료',
+    category: '기밀 2종',
+    action: '입력 금지',
+    treatment: '자동 차단되지 않으므로 사용자 직접 차단',
+    keywords: ['노조','노동조합','노사','노사협의회','협의회','단체교섭','임단협','조합원','가입','탈퇴','협상안','교섭안','회의록','발언','안건','쟁의'],
+    reason: '노사/협의회 안건, 발언, 회의록, 협상안, 조합 가입 여부는 HR 기밀 데이터입니다. 전사 필터링 솔루션으로 자동 차단되지 않을 수 있으므로 직접 입력하지 않습니다.',
+    blocked: ['노사협의회 실제 안건','참석자 발언 내용','단체교섭 협상안','임단협 자료','조합원 또는 가입 여부','노조 측 제안과 회사 측 대응 논리'],
+    transform: ['실제 안건·발언·협상 내용은 입력하지 않습니다.','일반적인 회의 운영 원칙 또는 공개 법령 해석만 질문합니다.','관련 파일 전체 업로드를 금지합니다.'],
+    before: '지난 노사협의회에서 논의된 실제 임금 인상안과 발언 내용',
+    after: '입력 금지. 실제 내용 없는 일반 협의회 운영 원칙 질의만 가능',
+    prompt: '회사의 실제 안건이나 회의 내용을 포함하지 않고, 일반적인 노사협의회 회의록 작성 시 유의할 점을 알려주세요.'
+  },
+  {
+    id: 'direct-identifiers',
+    level: 'yellow',
+    label: 'YELLOW / 가공 후 사용',
+    title: '직접 식별자',
+    category: '임직원 개인정보',
+    action: '제거·대체 후 사용',
+    treatment: 'Level 1. 직접 식별자 제거',
+    keywords: ['이름','성명','실명','사번','이메일','메일','연락처','전화번호','휴대폰','주소','사진','계좌','계좌번호','프로필'],
+    reason: '이름, 사번, 이메일, 연락처, 주소, 사진, 계좌번호는 개인을 바로 알아볼 수 있는 정보입니다. 법무 검토 완료 전까지 원문 입력하지 않고 제거 또는 임시 코드로 대체합니다.',
+    blocked: ['성명','사번','회사 이메일','개인 연락처','주소','사진','급여 계좌번호','개인 프로필 원문'],
+    transform: ['이름은 직원 A/B로 대체','사번은 EMP-001 같은 임시 코드로 대체','연락처·이메일·주소·사진·계좌번호는 삭제','같은 대화 안에서는 가명을 일관되게 사용'],
+    before: '홍길동 / EMP2021-0023 / hong@example.com / 010-1234-5678',
+    after: '직원 A / EMP-001 / 연락처 삭제',
+    prompt: '아래는 직접 식별자를 제거한 인사 기본 정보입니다. 문장 구조를 더 명확하게 정리해 주세요.\n\n[가공된 정보 입력]'
+  },
+  {
+    id: 'aggregation-risk',
+    level: 'yellow',
+    label: 'YELLOW / 재식별 주의',
+    title: '조합 식별 위험',
+    category: '임직원 개인정보',
+    action: '속성 축소·분리',
+    treatment: 'Level 2. 범주화와 결합정보 축소',
+    keywords: ['조합','특정','식별','재식별','연령','성별','부서','직책','연차','학교','전직장','전 직장','평가등급','3개','속성','소수'],
+    reason: '단독으로는 무해한 정보도 3개 이상 결합되면 특정인이 드러날 수 있습니다. 예를 들어 연령대, 성별, 팀, 휴직, 평가등급이 함께 있으면 이름이 없어도 특정될 수 있습니다.',
+    blocked: ['소수 조직명과 직책 조합','연령·성별·부서·휴직·평가등급 조합','학교명과 전 직장명 조합','특정 가능한 유일한 직무·연차 정보'],
+    transform: ['부서명은 직군 또는 기능 단위로 축소','정확한 연차는 경력 구간으로 변경','평가등급은 평가군 또는 경향으로 변경','한 프롬프트에 결합되는 개인 속성을 줄이거나 분리'],
+    before: '30대 여성 + A팀 + 육아휴직 중 + 성과 하위 10%',
+    after: '휴직 복귀 직원의 성과 관리에 대한 일반적인 지원 방안',
+    prompt: '특정 개인이나 조직을 식별할 수 없도록 일반화한 상황입니다. 휴직 복귀 직원의 업무 적응을 지원하는 일반적인 체크리스트를 작성해 주세요.'
+  },
+  {
+    id: 'performance',
+    level: 'yellow',
+    label: 'YELLOW / 가공 후 사용',
+    title: '성과·평가 정보',
+    category: '평가',
+    action: '익명·범주화 후 사용',
+    treatment: 'Level 2. 조합식별 제거',
+    keywords: ['평가','성과','업적','등급','목표','kpi','KPI','피드백','코멘트','리뷰','이의신청','하위성과','PIP','pip'],
+    reason: '평가 정보는 개인의 처우와 평판에 직접 영향을 주는 판단 정보입니다. 이름, 부서, 직책, 등급, 점수, 비교 대상 조합을 제거해야 합니다.',
+    blocked: ['직원명','사번','부서명','직책','평가등급','점수·순위','평가자 정보','비교 대상 직원 정보'],
+    transform: ['직원명은 직원 A로 대체','부서명은 직군 또는 기능 단위로 변경','점수·등급은 평가군 또는 경향으로 변경','개인별 등급 산정은 AI에 요청하지 않음'],
+    before: '홍길동(EMP2021-023, 영업1팀 과장)의 2024년 성과 점수가 C등급입니다.',
+    after: '영업 직군 중간관리자급 직원이 낮은 성과 평가를 받은 상황',
+    prompt: '영업 직군 중간관리자급 직원이 올해 낮은 성과 평가를 받았을 때, 성과 개선 계획(PIP)을 작성하는 일반적인 방법을 알려주세요.'
+  },
+  {
+    id: 'compensation',
+    level: 'yellow',
+    label: 'YELLOW / 가공 후 사용',
+    title: '급여·보상 정보',
+    category: '보상',
+    action: '금액 구간화 후 사용',
+    treatment: 'Level 2. 금액·식별자 제거',
+    keywords: ['급여','연봉','월급','성과급','인센티브','보상','상여','수당','계좌','급여명세','보상구간','시장수준'],
+    reason: '보상 정보는 개인의 경제 상황과 평가 정보가 결합될 수 있습니다. 정확한 금액, 계좌, 이름, 평가등급 조합은 제거하고 구간으로 바꿉니다.',
+    blocked: ['직원명','정확한 급여액','급여 계좌번호','급여명세 세부 항목','평가등급과 급여액 조합','개인별 인상률 산정 요청'],
+    transform: ['정확한 금액은 급여 구간으로 변경','부서명은 직군 단위로 변경','계좌번호와 급여명세 원문 삭제','인상률 결정은 AI에 요청하지 않음'],
+    before: '박민준 대리(EMP2022-041) 연봉이 4,200만원인데 시장 수준과 비교해줘.',
+    after: '대리급 직원의 연봉 4,000~4,500만원 구간',
+    prompt: '대리급 직원의 연봉 4,000~4,500만원 구간이 IT 업계 시장 수준과 비교해 어떤 수준인지 검토할 때 고려할 일반 항목을 알려주세요.'
+  },
+  {
+    id: 'recruiting',
+    level: 'yellow',
+    label: 'YELLOW / 가공 후 사용',
+    title: '채용·면접 정보',
+    category: '채용',
+    action: '지원자 식별 제거 후 사용',
+    treatment: 'Level 2~3. 지원자 정보 범주화',
+    keywords: ['채용','면접','지원자','후보자','이력서','경력기술서','면접메모','면접 메모','면접점수','오퍼','불합격','평판','레퍼런스','헤드헌팅'],
+    reason: '지원자 정보는 채용 절차 목적 내에서 제공된 개인정보입니다. 이름, 연락처, 학교, 전 직장, 면접점수, 평판조회 원문은 입력하지 않습니다.',
+    blocked: ['지원자명','연락처','학교명','전 직장명','면접점수','면접위원명','평판조회 원문','탈락 사유 원문'],
+    transform: ['지원자명은 지원자 A로 대체','학교·전 직장명은 배경 범주로 변경','점수·순위는 평가 경향으로 변경','평판 원문은 입력하지 않음'],
+    before: '지원자명 / 학교명 / 전 직장명 / 면접점수 / 탈락 사유 원문',
+    after: '지원자 A / 배경 범주화 / 평가 경향 / 일반 결과 안내 상황',
+    prompt: '채용 절차 종료 후 지원자에게 보내는 정중한 결과 안내 메일 초안을 작성해 주세요. 구체적인 평가 사유나 개인 식별정보는 포함하지 않는 일반 안내문으로 작성해 주세요.'
+  },
+  {
+    id: 'leave-health-family',
+    level: 'yellow',
+    label: 'YELLOW / 고위험 개인정보',
+    title: '휴직·건강·가족 정보',
+    category: '복리후생·근태',
+    action: '상세 사유 제거 또는 일반화',
+    treatment: 'Level 3. 민감 맥락 제거',
+    keywords: ['휴직','육아휴직','병가','건강','의료','진단','장애','산재','가족','가족관계','자녀','임신','출산','복지포인트','근태','출퇴근'],
+    reason: '휴직, 건강, 장애, 산재, 가족 정보는 사생활 침해 위험이 큽니다. 제도 안내나 일반 절차 질문으로 바꾸고 실제 사유와 당사자 정보는 입력하지 않습니다.',
+    blocked: ['특정인의 휴직 신청 내역','병명·진단명','장애 정보','산재 상세 기록','가족관계 원문','근태 일시와 이름 조합'],
+    transform: ['휴직 사유는 범주 또는 삭제','건강·가족 상세 사유는 입력하지 않음','근태 일시는 일반 패턴으로 변경','제도 안내문이나 FAQ 중심으로 질문'],
+    before: '김영희 직원의 병가 사유와 진단명이 포함된 복귀 안내문',
+    after: '건강 관련 사유를 밝히지 않는 일반 복귀 안내문',
+    prompt: '직원의 개인 건강 정보나 가족 정보를 포함하지 않고, 휴직 복귀자에게 안내할 일반적인 복귀 절차 메일 초안을 작성해 주세요.'
+  },
+  {
+    id: 'discipline-grievance',
+    level: 'yellow',
+    label: 'YELLOW / 고위험 개인정보',
+    title: '징계·고충·조사 사안',
+    category: '직원 관계',
+    action: '원문 입력 지양·일반 절차만 질의',
+    treatment: 'Level 3 또는 AX&CI Lab 문의',
+    keywords: ['징계','고충','제보','조사','소명','처분','감사','인사위원회','괴롭힘','성희롱','분쟁','해고','법적분쟁','소송','노무사안'],
+    reason: '징계, 고충, 조사, 법적 분쟁 사안은 개인 권리와 평판에 직접 영향을 주고 법적 분쟁과 연결될 수 있습니다. 실제 사건 원문은 입력하지 않는 것이 원칙입니다.',
+    blocked: ['당사자명','사건 경위 원문','진술 내용','증거자료','처분 검토 내용','인사위원회 세부 자료','법적 검토 원문'],
+    transform: ['실제 사건 내용은 입력하지 않음','일반 절차·문서 형식만 질문','필요 시 AX&CI Lab 문의 후 처리','노사/협의회 내용이 섞이면 RED 적용'],
+    before: '당사자명 / 사건 경위 / 진술 내용 / 처분 검토',
+    after: '실제 사건 내용 없는 일반 절차 질의',
+    prompt: '회사의 실제 사건 내용이나 당사자 정보를 포함하지 않고, 일반적인 징계 절차 안내문 작성 시 유의할 점을 알려주세요.'
+  },
+  {
+    id: 'executive-org-ma',
+    level: 'yellow',
+    label: 'YELLOW / 맥락 추상화',
+    title: '임원·조직·M&A 정보',
+    category: '회사 민감 맥락',
+    action: '맥락 추상화 후 사용',
+    treatment: 'Level 3. 조직·일정·상대방 일반화',
+    keywords: ['임원','조직개편','조직도','인사발령','발령','임원일정','임원 일정','후임자','조직통합','M&A','m&a','인수','합병','실사','PMI','pmi','매각','딜','deal'],
+    reason: '임원, 조직개편, M&A, PMI 정보는 개인정보가 아니어도 회사 의사결정과 미공개 정보의 단서가 될 수 있습니다. 회사명, 조직명, 임원명, 일정, 금액, 상대방을 일반화합니다.',
+    blocked: ['임원명','특정 사업부·팀명','구체 시행일','거래 상대방 회사명','프로젝트명','실사 일정','구체 금액과 인력 규모'],
+    transform: ['임원명은 역할 또는 직책군으로 변경','조직명은 특정 조직 또는 기능 단위로 변경','일정은 향후 일정 또는 미기재','거래 상대방·금액·인원은 삭제 또는 범주화'],
+    before: '[상대회사명] 인수 후 [조직명] [인원수]명 재배치',
+    after: '특정 인수 후 통합 상황에서 일부 인력 재배치 커뮤니케이션 고려사항',
+    prompt: '특정 회사명, 거래 상대방, 일정, 금액, 인원 규모를 포함하지 않고, 인수 후 조직 통합 상황에서 구성원 커뮤니케이션 시 고려할 항목을 정리해 주세요.'
+  },
+  {
+    id: 'file-upload',
+    level: 'yellow',
+    label: 'YELLOW / 파일 주의',
+    title: '첨부파일 업로드',
+    category: '파일',
+    action: '가공본만 업로드',
+    treatment: '숨은 데이터 사전 검수',
+    keywords: ['파일','첨부','업로드','엑셀','xlsx','csv','시트','숨겨진시트','숨겨진 시트','필터','피벗','댓글','메모','원본','다운로드'],
+    reason: '파일에는 보이는 표 외에 숨겨진 시트, 필터로 가려진 행, 메모, 댓글, 피벗 원본, 다른 직원 정보가 포함될 수 있습니다.',
+    blocked: ['원본 엑셀 전체','숨겨진 시트','필터로 가려진 행','메모·댓글','피벗 원본','불필요한 개인정보가 남은 파일'],
+    transform: ['업로드 전 파일 전체 검수','필요 없는 시트·행·열 삭제','가공본을 별도 생성','민감정보가 남아 있으면 업로드 중단'],
+    before: '원본 엑셀 전체 업로드',
+    after: '불필요 데이터 제거·가공본만 업로드 또는 일반 체크리스트만 질의',
+    prompt: '실제 파일을 업로드하지 않고, HR 데이터 파일을 AI에 업로드하기 전 확인해야 할 사전 검수 체크리스트를 작성해 주세요.'
+  },
+  {
+    id: 'approved-account',
+    level: 'red',
+    label: 'RED / 사용 금지',
+    title: '개인 계정 또는 미승인 AI 사용',
+    category: '계정·접속',
+    action: '회사 승인 Enterprise 계정만 사용',
+    treatment: '전사 보안가이드 준수',
+    keywords: ['개인계정','개인 계정','무료','개인구독','개인 구독','미승인','비인가','확장프로그램','브라우저확장','agent','에이전트','shadow ai','Shadow AI'],
+    reason: '업무 목적의 HR 데이터는 회사가 승인한 Enterprise 계정에서만 사용합니다. 개인 계정, 무료 계정, 미승인 확장 프로그램은 데이터 처리 계약과 로그 관리 범위 밖에 있을 수 있습니다.',
+    blocked: ['개인 ChatGPT·Claude·Gemini 계정','무료 계정','개인 구독 계정','미승인 AI 확장 프로그램','사내 권한을 요구하는 외부 Agent'],
+    transform: ['회사 승인 Enterprise 계정으로 전환','미승인 도구에 입력한 업무 데이터 사용 중단','필요 시 AX&CI Lab에 승인 서비스 확인'],
+    before: '개인 계정에 HR 파일 업로드',
+    after: '회사 승인 Enterprise 계정에서 가공본만 사용',
+    prompt: '회사 승인 Enterprise 계정에서, 개인 정보가 제거된 일반 HR 문안 작성 요청만 진행합니다.'
+  },
+  {
+    id: 'decision',
+    level: 'red',
+    label: 'RED / 행위 금지',
+    title: 'AI에게 인사결정 자체를 위임',
+    category: '행위 제한',
+    action: '결정 위임 금지',
+    treatment: 'Human-in-the-Loop 필수',
+    keywords: ['합격','탈락','선발','순위','추천해줘','누구를 뽑을까','평가등급 정해줘','징계수위','징계 수위','보상 인상률','승진','해고','인사결정'],
+    reason: '채용, 평가, 보상, 징계, 승진 등 인사결정은 사람이 책임지고 검토해야 합니다. AI는 문서 정리, 표현 개선, 일반 기준 정리에만 활용합니다.',
+    blocked: ['지원자 합격·불합격 판단','직원 평가등급 산정','보상 인상률 결정','징계 수위 결정','핵심인재 선정·순위화'],
+    transform: ['AI에는 일반 기준이나 체크리스트만 질문','최종 판단은 담당자와 의사결정자가 수행','AI 결과는 초안으로만 사용'],
+    before: '지원자 A와 B 중 누구를 뽑을지 추천해줘.',
+    after: '면접 평가표를 사람이 검토할 때 확인할 일반 기준 정리',
+    prompt: '개인별 판단 없이, 채용 면접 평가표를 사람이 검토할 때 확인해야 할 일반적인 체크리스트를 작성해 주세요.'
+  },
+  {
+    id: 'general-hr',
+    level: 'green',
+    label: 'GREEN / 사용 가능',
+    title: '일반 HR 업무 질의',
+    category: '일반 업무',
+    action: '사용 가능',
+    treatment: '개인·회사 식별정보 없음',
+    keywords: ['채용공고','JD','jd','직무기술서','면접질문','교육자료','온보딩','공개자료','공개법령','노동법','일반 문구','메일문안','공지문','FAQ','faq','템플릿','체크리스트','아이디어','코칭가이드'],
+    reason: '회사·개인·조직·사건 식별정보가 없고 공개자료 또는 범용 업무 지식에 관한 질문은 사용할 수 있습니다.',
+    blocked: ['회사 내부 수치','개인명','부서명','미공개 계획','평가·보상·채용 실데이터','노사/협의회 실제 내용'],
+    transform: ['내부 정보가 섞이면 YELLOW 또는 RED로 재분류','공개자료임을 확인','회사 고유 맥락은 일반화'],
+    before: '일반적인 채용공고 문구 또는 공개 노동법 해석 질문',
+    after: '사용 가능. 내부 정보가 섞이면 재분류',
+    prompt: 'HR 담당자를 위한 온보딩 교육자료 목차를 작성해 주세요. 특정 회사 내부 정보나 임직원 정보는 포함하지 않는 일반적인 목차로 작성해 주세요.'
+  }
+];
+
+const quick = ['노사협의회', '주민번호', '사번', '평가 코멘트', '급여', '육아휴직', '징계', '면접 메모', '엑셀 업로드', '개인 계정', '채용공고'];
+const chips = document.getElementById('chips');
+quick.forEach((q) => {
+  const button = document.createElement('button');
+  button.className = 'chip';
+  button.type = 'button';
+  button.textContent = q;
+  button.addEventListener('click', () => {
+    document.getElementById('query').value = q;
+    searchGuide();
+  });
+  chips.appendChild(button);
+});
+
+function norm(value) {
+  return String(value || '').toLowerCase().replace(/[\s_\-–—/()\[\]{}.,:;"'`]+/g, '');
+}
+
+function scoreCard(card, query) {
+  const nq = norm(query);
+  if (!nq) return 0;
+  let score = 0;
+  const hay = norm([card.title, card.category, card.action, card.treatment, card.reason, card.before, card.after].join(' '));
+  if (hay.includes(nq)) score += 4;
+  for (const kw of card.keywords) {
+    const nk = norm(kw);
+    if (!nk) continue;
+    if (nq === nk) score += 22;
+    else if (nq.includes(nk)) score += 14;
+    else if (nk.includes(nq)) score += 8;
+  }
+  const intentWords = ['넣어도','입력','사용','써도','요약','정리','마스킹','익명','가명','처리','가능','되나요','해야','올려도','업로드'];
+  if (intentWords.some((word) => query.includes(word)) && score > 0) score += 1;
+  return score;
+}
+
+function badgeClass(level) {
+  if (level === 'red') return 'red';
+  if (level === 'yellow') return 'yellow';
+  if (level === 'green') return 'green';
+  return 'blue';
+}
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"]/g, (char) => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[char]));
+}
+
+function highlight(text, query) {
+  const safe = escapeHtml(text);
+  const terms = String(query || '').split(/[\s,]+/).filter((term) => term.length > 1).slice(0, 4);
+  let output = safe;
+  for (const term of terms) {
+    const escapedTerm = escapeHtml(term).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    try {
+      output = output.replace(new RegExp(escapedTerm, 'gi'), (match) => `<mark>${match}</mark>`);
+    } catch (error) {}
+  }
+  return output;
+}
+
+function renderCard(card, query) {
+  const badge = badgeClass(card.level);
+  return `<article class="result-card">
+    <div class="result-head">
+      <div>
+        <span class="badge ${badge}">${escapeHtml(card.label)}</span>
+        <h3 style="margin-top:10px">${highlight(card.title, query)}</h3>
+        <p class="muted">카테고리: ${escapeHtml(card.category)} · 처리 기준: ${escapeHtml(card.treatment)}</p>
+      </div>
+      <span class="badge ${badge}">${escapeHtml(card.action)}</span>
+    </div>
+    <div class="result-body">
+      <div>
+        <h4>왜 이렇게 분류되나</h4>
+        <p>${highlight(card.reason, query)}</p>
+        <h4>AI에 넣으면 안 되는 원문 요소</h4>
+        <ul>${card.blocked.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>
+        <h4>입력 전 처리</h4>
+        <ul>${card.transform.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>
+      </div>
+      <div>
+        <div class="example">
+          <strong>원문 예시</strong>
+          <p>${escapeHtml(card.before)}</p>
+          <strong>처리 후</strong>
+          <p>${escapeHtml(card.after)}</p>
+        </div>
+        <h4>입력 가능한 프롬프트 예시</h4>
+        <pre>${escapeHtml(card.prompt)}</pre>
+        <p class="small muted">원문 값을 입력한 뒤 출력에서 제외하라고 지시하지 마십시오. 먼저 사람이 가공한 뒤 입력합니다.</p>
+      </div>
+    </div>
+  </article>`;
+}
+
+function fallback(query) {
+  return `<div class="result-card">
+    <div class="result-head">
+      <div>
+        <span class="badge blue">판단 불가</span>
+        <h3>검색 결과가 명확하지 않습니다</h3>
+      </div>
+      <span class="badge blue">문의 또는 일반화</span>
+    </div>
+    <div class="result-body">
+      <div>
+        <p>입력하려는 내용이 RED/YELLOW/GREEN 중 어디에 해당하는지 명확하지 않습니다.</p>
+        <ul>
+          <li>원문을 그대로 입력하지 마십시오.</li>
+          <li>고유식별정보, 노사/협의회, 직접 식별자, 조합 식별 위험, 평가·보상·채용·징계·휴직 정보 포함 여부를 다시 확인하십시오.</li>
+          <li>판단이 어려우면 <strong>AX&amp;CI Lab</strong>에 문의하십시오.</li>
+        </ul>
+      </div>
+      <div>
+        <h4>일반 질의로 바꾸는 예시</h4>
+        <pre>회사의 실제 정보나 개인 정보를 포함하지 않고, 일반적인 HR 업무 처리 원칙을 알려주세요.</pre>
+      </div>
+    </div>
+  </div>`;
+}
+
+function searchGuide() {
+  const query = document.getElementById('query').value.trim();
+  const resultBox = document.getElementById('results');
+  if (!query) {
+    resultBox.innerHTML = '';
+    return;
+  }
+  const ranked = guideData
+    .map((card) => ({ card, score: scoreCard(card, query) }))
+    .filter((item) => item.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 4);
+  if (!ranked.length) {
+    resultBox.innerHTML = fallback(query);
+    return;
+  }
+  resultBox.innerHTML = `<p class="small muted" style="margin-top:14px">검색어 <span class="kbd">${escapeHtml(query)}</span> 기준 ${ranked.length}개 결과를 표시합니다.</p>` + ranked.map((item) => renderCard(item.card, query)).join('');
+}
+
+document.getElementById('searchBtn').addEventListener('click', searchGuide);
+document.getElementById('resetBtn').addEventListener('click', () => {
+  document.getElementById('query').value = '';
+  document.getElementById('results').innerHTML = '';
+});
+document.getElementById('query').addEventListener('keydown', (event) => {
+  if (event.key === 'Enter') searchGuide();
+});
+</script>
 </body>
 </html>
